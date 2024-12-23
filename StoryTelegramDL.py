@@ -1,11 +1,12 @@
-# Requier Modules 
-# designer and programmer @mrkral
+# Required Modules
+# Designer and programmer @mrkral
 # https://github.com/ParsaPanahi
 from pyrogram import Client, types, filters, enums
 import asyncio 
 import os
 import requests
 import json
+import time
 
 # Bot Config Obj
 class Config:
@@ -116,6 +117,14 @@ async def ON_URL(app: Client, message: types.Message):
 
     message_data = await message.reply("⏳ در حال دانلود استوری... لطفاً صبر کنید.")
     
+    # Simulate Loading Bar (0% to 100%)
+    progress = 0
+    loading_message = await message.reply("🔄 در حال بارگذاری استوری...")
+    while progress < 100:
+        progress += 10
+        await loading_message.edit(f"📤 در حال دانلود استوری... {progress}%")
+        time.sleep(0.5)  # Simulate time delay
+
     # Fetch and send story data
     status, story_data = await GET_STORES_DATA(chat_id, story_id)
     if not status:
@@ -123,8 +132,9 @@ async def ON_URL(app: Client, message: types.Message):
         return
 
     await message_data.edit("✅ استوری با موفقیت دانلود شد! ارسال می‌شود...")
+    user_details = f"🎥 استوری از {message.from_user.first_name} (@{message.from_user.username})"
     await app.send_video(
-        chat_id=message.chat.id, video=story_data, caption="📹 استوری دانلود شده:"
+        chat_id=message.chat.id, video=story_data, caption=f"{user_details}\n📹 استوری دانلود شده:"
     )
 
 # Handle the '/help' command
