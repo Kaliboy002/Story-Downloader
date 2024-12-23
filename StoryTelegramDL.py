@@ -137,7 +137,7 @@ async def ON_URL(app: Client, message: types.Message):
         # Create the tube-shaped progress bar
         progress_bar = '▰' * (progress_percentage // 10) + '▱' * (10 - progress_percentage // 10)
         await loading_message.edit(f"📤 در حال دانلود استوری... {progress_percentage:.0f}% {progress_bar}")
-        await asyncio.sleep(0.5)  # Simulate the time delay for downloading
+        await asyncio.sleep(0.5)  # Simulate the htime delay for downloading
 
     await message_data.edit("✅ استوری با موفقیت دانلود شد! ارسال می‌شود...")
     user_details = f"🎥 استوری از {message.from_user.first_name} (@{message.from_user.username})"
