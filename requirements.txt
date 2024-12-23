@@ -1,5 +1,2 @@
-pyrogram
 pyrofork
-tgcrypto==1.2.3
-requests==2.31.0
 pyrogra
