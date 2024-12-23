@@ -117,27 +117,19 @@ async def ON_URL(app: Client, message: types.Message):
 
     message_data = await message.reply("⏳ در حال دانلود استوری... لطفاً صبر کنید.")
     
+    # Simulate Loading Bar (0% to 100%)
+    progress = 0
+    loading_message = await message.reply("🔄 در حال بارگذاری استوری...")
+    while progress < 100:
+        progress += 10
+        await loading_message.edit(f"📤 در حال دانلود استوری... {progress}%")
+        time.sleep(0.5)  # Simulate time delay
+
     # Fetch and send story data
     status, story_data = await GET_STORES_DATA(chat_id, story_id)
     if not status:
         await message_data.edit("❌ متاسفانه خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
         return
-
-    # Get the total size of the story
-    total_size = len(story_data.getbuffer())  # Get the size of the story (in bytes)
-
-    # Simulate the progress
-    progress = 0
-    chunk_size = total_size // 10  # You can adjust this if needed for finer progress updates
-
-    loading_message = await message.reply("🔄 در حال بارگذاری استوری...")
-    while progress < total_size:
-        progress += chunk_size
-        progress_percentage = (progress / total_size) * 100
-        # Create the tube-shaped progress bar
-        progress_bar = '▰' * (progress_percentage // 10) + '▱' * (10 - progress_percentage // 10)
-        await loading_message.edit(f"📤 در حال دانلود استوری... {progress_percentage:.0f}% {progress_bar}")
-        await asyncio.sleep(0.5)  # Simulate the htime delay for downloading
 
     await message_data.edit("✅ استوری با موفقیت دانلود شد! ارسال می‌شود...")
     user_details = f"🎥 استوری از {message.from_user.first_name} (@{message.from_user.username})"
