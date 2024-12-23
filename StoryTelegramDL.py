@@ -1,4 +1,6 @@
 # Required Modules
+# Designer and programmer @mrkral
+# https://github.com/ParsaPanahi
 from pyrogram import Client, types, filters, enums
 import asyncio 
 import os
@@ -58,12 +60,6 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
         return (False, None)
     await app.disconnect()
     return (True, data)
-
-# Helper function to create tube-shaped progress
-def get_tube_progress(progress: int):
-    filled = '▰' * (progress // 10)
-    empty = '▱' * (10 - (progress // 10))
-    return filled + empty
 
 # Handle the '/start' command
 @app.on_message(filters.private & filters.regex('^/start$'))
@@ -127,20 +123,23 @@ async def ON_URL(app: Client, message: types.Message):
         await message_data.edit("❌ متاسفانه خطایی رخ داده است. لطفاً دوباره تلاش کنید.")
         return
 
-    await message_data.edit("✅ استوری با موفقیت دانلود شد! ارسال می‌شود...")
+    # Get the total size of the story
+    total_size = len(story_data.getbuffer())  # Get the size of the story (in bytes)
 
-    # Simulate real-time progress during sending
-    total_size = len(story_data)  # Get the size of the story (in bytes)
+    # Simulate the progress
     progress = 0
-    chunk_size = total_size // 10  # Assuming 10 steps for the progress bar
-    loading_message = await message.reply("🔄 در حال ارسال استوری...")
+    chunk_size = total_size // 10  # You can adjust this if needed for finer progress updates
 
-    for i in range(10):
-        progress = (i + 1) * 10
-        tube_progress = get_tube_progress(progress)
-        await loading_message.edit(f"📤 در حال ارسال استوری... {tube_progress} {progress}%")
-        await asyncio.sleep(1)  # Simulate some time delay between updates
+    loading_message = await message.reply("🔄 در حال بارگذاری استوری...")
+    while progress < total_size:
+        progress += chunk_size
+        progress_percentage = (progress / total_size) * 100
+        # Create the tube-shaped progress bar
+        progress_bar = '▰' * (progress_percentage // 10) + '▱' * (10 - progress_percentage // 10)
+        await loading_message.edit(f"📤 در حال دانلود استوری... {progress_percentage:.0f}% {progress_bar}")
+        await asyncio.sleep(0.5)  # Simulate the time delay for downloading
 
+    await message_data.edit("✅ استوری با موفقیت دانلود شد! ارسال می‌شود...")
     user_details = f"🎥 استوری از {message.from_user.first_name} (@{message.from_user.username})"
     await app.send_video(
         chat_id=message.chat.id, video=story_data, caption=f"{user_details}\n📹 استوری دانلود شده:"
