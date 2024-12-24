@@ -57,11 +57,14 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
     states = ['administrator', 'creator', 'member', 'restricted']
     for channel in channels:
         try:
-            api = f"https://api.telegram.org/bot{api_key}/getChatMember?chat_id=@{channel}&user_id={user_id}"
-            response = requests.get(api).json()
-            if response.get('result', {}).get('status') not in states:
+            api_url = f"https://api.telegram.org/bot{api_key}/getChatMember?chat_id=@{channel}&user_id={user_id}"
+            response = requests.get(api_url).json()
+            if response.get('ok') and response.get('result', {}).get('status') in states:
+                continue
+            else:
                 return False, channel
-        except:
+        except Exception as e:
+            print(f"Error in CHECK_JOIN_MEMBER: {e}")
             return False, channel
     return True, None
 
@@ -75,7 +78,7 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
             return False, None
         data = await client.download_media(story[0], in_memory=True)
     except Exception as e:
-        print(e)
+        print(f"Error in GET_STORES_DATA: {e}")
         return False, None
     finally:
         await client.disconnect()
@@ -161,4 +164,5 @@ async def ON_URL(app: Client, message: types.Message):
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
     await app.send_video(chat_id=message.chat.id, video=story_data)
 
+# Run the bot
 asyncio.run(app.run())
