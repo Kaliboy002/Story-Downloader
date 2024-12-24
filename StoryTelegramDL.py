@@ -85,7 +85,7 @@ LANGUAGE_TEXTS = {
 user_language = {}
 
 # Start Bot with Language Selection
-@app.on_message(filters.private & filters.regex('^/start$'))
+@app.on_message(filters.private & filters.command("start"))
 async def ON_START_BOT(app: Client, message: types.Message):
     if message.from_user.id not in user_language:
         markup = types.ReplyKeyboardMarkup(resize_keyboard=True, one_time_keyboard=True)
@@ -105,8 +105,8 @@ async def ON_START_BOT(app: Client, message: types.Message):
         json.dump(datas, open('./data.json', 'w'), indent=3)
     await message.reply(text=LANGUAGE_TEXTS[lang]["welcome"])
 
-@app.on_message(filters.private & filters.text & ~filters.command)
-async def ON_LANGUAGE_SELECT(app: Client, message: types.Message):
+@app.on_message(filters.private & filters.text)
+async def ON_MESSAGE_HANDLER(app: Client, message: types.Message):
     if message.text in ["English", "فارسی"]:
         user_language[message.from_user.id] = "en" if message.text == "English" else "fa"
         await message.reply("Language set successfully! Please send the /start command again.")
