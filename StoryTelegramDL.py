@@ -178,46 +178,40 @@ async def broadcast_message(app: Client, message: types.Message):
     # Wait for the message to broadcast
     @app.on_message(filters.private)
     async def on_broadcast_message(app: Client, broadcast_msg: types.Message):
-        if broadcast_msg.from_user.id != Config.SUDO:
-            return  # Only Sudo user can send messages for broadcast
+        if broadcast_msg.from_user.id != Config.SUDOif broadcast_msg.from_user.id != Config.SUDO:
+            return  # Only Sudo user can send the broadcast message
 
         data = json.load(open('./data.json'))
         users = data['users']
-
+        
+        # Checking if the message contains media (photo, video, file) or text
         if broadcast_msg.text:
-            for user_id in users:
-                try:
-                    await app.send_message(user_id, broadcast_msg.text)
-                except Exception as e:
-                    print(f"Error sending message to {user_id}: {e}")
-
+            message_text = broadcast_msg.text
+            media = None
         elif broadcast_msg.photo:
-            for user_id in users:
-                try:
-                    await app.send_photo(user_id, broadcast_msg.photo)
-                except Exception as e:
-                    print(f"Error sending photo to {user_id}: {e}")
-
+            message_text = None
+            media = broadcast_msg.photo.file_id
         elif broadcast_msg.video:
-            for user_id in users:
-                try:
-                    await app.send_video(user_id, broadcast_msg.video)
-                except Exception as e:
-                    print(f"Error sending video to {user_id}: {e}")
-
+            message_text = None
+            media = broadcast_msg.video.file_id
         elif broadcast_msg.document:
-            for user_id in users:
-                try:
-                    await app.send_document(user_id, broadcast_msg.document)
-                except Exception as e:
-                    print(f"Error sending document to {user_id}: {e}")
+            message_text = None
+            media = broadcast_msg.document.file_id
+        else:
+            message_text = None
+            media = None
 
-        elif broadcast_msg.audio:
-            for user_id in users:
-                try:
-                    await app.send_audio(user_id, broadcast_msg.audio)
-                except Exception as e:
-                    print(f"Error sending audio to {user_id}: {e}")
+        # Broadcast the message to all users
+        for user_id in users:
+            try:
+                if message_text:
+                    await app.send_message(user_id, message_text)
+                if media:
+                    await app.send_media_group(user_id, [types.InputMedia(media)])
+            except Exception as e:
+                print(f"Error broadcasting to {user_id}: {e}")
+
+        await app.send_message(message.chat.id, "Broadcast completed!")
 
 # Run the bot
 asyncio.run(app.run())
