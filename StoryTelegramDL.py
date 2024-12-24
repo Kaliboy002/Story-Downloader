@@ -40,7 +40,7 @@ LANGUAGE_TEXTS = {
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
-        "broadcast_success": "The message has been broadcasted to all users.",
+        "broadcast_success": "Broadcasting complete!",
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -50,7 +50,7 @@ LANGUAGE_TEXTS = {
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
-        "broadcast_success": "پیام با موفقیت به تمام کاربران ارسال شد.",
+        "broadcast_success": "پخش پیام با موفقیت انجام شد!",
     }
 }
 
@@ -170,34 +170,23 @@ async def ON_URL(app: Client, message: types.Message):
     await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
 
 # Broadcast to all users
-@app.on_message(filters.reply & filters.regex('^/broadcast'))
+@app.on_message(filters.private & filters.text & filters.regex('^/broadcast'))
 async def broadcast_message(app: Client, message: types.Message):
     if message.from_user.id != Config.SUDO:
+        await message.reply("You are not authorized to use this command.")
         return
 
     data = json.load(open('./data.json'))
     users = data['users']
+    caption = message.text[len('/broadcast '):].strip()
 
-    if message.reply_to_message:
-        # Broadcast media or text based on the type of message
-        media = message.reply_to_message
-        caption = message.text.split('/broadcast', 1)[1].strip() if len(message.text.split('/broadcast', 1)) > 1 else ""
-        
-# Send to all users
-for user_id in users:
-    try:
-        if isinstance(media, types.Message):  # If the media is a regular text message
-            await app.send_message(user_id, media.text + "\n" + caption)
-        elif media.photo:  # If media is a photo
-            await app.send_photo(user_id, media.photo.file_id, caption=caption)
-        elif media.video:  # If media is a video
-            await app.send_video(user_id, media.video.file_id, caption=caption)
-        elif media.document:  # If media is a document
-            await app.send_document(user_id, media.document.file_id, caption=caption)
-    except Exception as e:
-        print(f"Error broadcasting to user {user_id}: {e}")
+    for user_id in users:
+        try:
+            await app.send_message(user_id, caption)
+        except Exception as e:
+            print(f"Error broadcasting to user {user_id}: {e}")
 
-# This line should be placed at the same indentation level as the 'for' loop.
-await message.reply(LANGUAGE_TEXTS[language]["broadcast_success"])
+    await message.reply(LANGUAGE_TEXTS[language]["broadcast_success"])
+
 # Run the bot
 asyncio.run(app.run())
