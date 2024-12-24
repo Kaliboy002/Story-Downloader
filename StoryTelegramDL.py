@@ -40,7 +40,6 @@ LANGUAGE_TEXTS = {
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
-        "broadcast_success": "Broadcasting complete!",
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -50,7 +49,6 @@ LANGUAGE_TEXTS = {
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
-        "broadcast_success": "پخش پیام با موفقیت انجام شد!",
     }
 }
 
@@ -169,24 +167,22 @@ async def ON_URL(app: Client, message: types.Message):
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
     await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
 
-# Broadcast to all users
-@app.on_message(filters.private & filters.text & filters.regex('^/broadcast'))
+# Broadcast message to all users
+@app.on_message(filters.private & filters.user(Config.SUDO))
 async def broadcast_message(app: Client, message: types.Message):
-    if message.from_user.id != Config.SUDO:
-        await message.reply("You are not authorized to use this command.")
-        return
-
     data = json.load(open('./data.json'))
-    users = data['users']
-    caption = message.text[len('/broadcast '):].strip()
-
-    for user_id in users:
+    for user_id in data['users']:
         try:
-            await app.send_message(user_id, caption)
+            if message.text:
+                await app.send_message(user_id, message.text)
+            elif message.video:
+                await app.send_video(user_id, message.video.file_id, caption=message.caption)
+            elif message.document:
+                await app.send_document(user_id, message.document.file_id, caption=message.caption)
+            elif message.photo:
+                await app.send_photo(user_id, message.photo.file_id, caption=message.caption)
         except Exception as e:
-            print(f"Error broadcasting to user {user_id}: {e}")
-
-    await message.reply(LANGUAGE_TEXTS[language]["broadcast_success"])
+            print(f"Error broadcasting to {user_id}: {e}")
 
 # Run the bot
 asyncio.run(app.run())
