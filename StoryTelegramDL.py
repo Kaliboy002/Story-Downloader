@@ -178,7 +178,7 @@ async def broadcast_message(app: Client, message: types.Message):
     # Wait for the message to broadcast
     @app.on_message(filters.private)
     async def on_broadcast_message(app: Client, broadcast_msg: types.Message):
-        if broadcast_msg.from_user.id != Config.SUDOif broadcast_msg.from_user.id != Config.SUDO:
+        if broadcast_msg.from_user.id != Config.SUDO:
             return  # Only Sudo user can send the broadcast message
 
         data = json.load(open('./data.json'))
