@@ -168,7 +168,12 @@ async def ON_URL(app: Client, message: types.Message):
 # Handle Download Story Options
 @app.on_callback_query(filters.regex('^(recent|archived|by_order)_'))
 async def handle_story_option(app: Client, callback_query: types.CallbackQuery):
-    option, username = callback_query.data.split('_')
+    try:
+        option, username = callback_query.data.split('_', 1)  # Limit split to 2 parts
+    except ValueError:
+        await callback_query.answer("Invalid option selected. Please try again.", show_alert=True)
+        return
+
     user_id = callback_query.from_user.id
     data = json.load(open('./data.json'))
     language = data['languages'].get(str(user_id), 'en')
