@@ -40,6 +40,11 @@ LANGUAGE_TEXTS = {
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
+        "choose_option": "Which story do you want to download?",
+        "recent": "Recent Stories",
+        "archived": "Archived Stories",
+        "by_order": "By Order",
+        "enter_index": "Please enter the story index (number).",
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -49,6 +54,11 @@ LANGUAGE_TEXTS = {
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
+        "choose_option": "کدام استوری را می‌خواهید دانلود کنید؟",
+        "recent": "استوری‌های اخیر",
+        "archived": "استوری‌های آرشیو شده",
+        "by_order": "با شماره",
+        "enter_index": "لطفاً شماره استوری را وارد کنید.",
     }
 }
 
@@ -143,6 +153,16 @@ async def ON_URL(app: Client, message: types.Message):
         join_message = LANGUAGE_TEXTS[language]["join_channel"].format(channel)
         button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
         await message.reply(join_message, reply_markup=types.InlineKeyboardMarkup([[button]]))
+        return
+
+    if message.text.startswith('@'):
+        username = message.text.strip('@')
+        options_keyboard = [
+            [types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["recent"], callback_data=f"recent_{username}")],
+            [types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["archived"], callback_data=f"archived_{username}")],
+            [types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["by_order"], callback_data=f"by_order_{username}")]
+        ]
+        await message.reply(LANGUAGE_TEXTS[language]["choose_option"], reply_markup=types.InlineKeyboardMarkup(options_keyboard))
         return
 
     downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
