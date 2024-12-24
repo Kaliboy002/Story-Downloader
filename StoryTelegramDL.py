@@ -69,6 +69,18 @@ def set_user_language(user_id, language):
     datas['users'][str(user_id)]['language'] = language
     json.dump(datas, open('./data.json', 'w'), indent=3)
 
+async def CHECK_JOIN_MEMBER(user_id, channls, API_KEY):
+    states = ['administrator', 'creator', 'member', 'restricted']
+    for channl in channls:
+        try:
+            api = f"https://api.telegram.org/bot{API_KEY}/getChatMember?chat_id=@{channl}&user_id={user_id}"
+            response = requests.get(api).json()
+            if response['result']['status'] not in states:
+                return (False, channl)
+        except Exception:
+            return (False, channl)
+    return (True, None)
+
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
     user_id = message.from_user.id
