@@ -40,7 +40,7 @@ LANGUAGE_TEXTS = {
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
-        "progress": "Downloading... {}%",
+        "broadcast_success": "The message has been broadcasted to all users.",
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -50,7 +50,7 @@ LANGUAGE_TEXTS = {
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
-        "progress": "در حال دانلود... {}%",
+        "broadcast_success": "پیام با موفقیت به تمام کاربران ارسال شد.",
     }
 }
 
@@ -70,25 +70,15 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
             return False, channel
     return True, None
 
-# Progress Callback
-async def progress_callback(current, total, message, language):
-    percent = int((current / total) * 100)
-    progress_message = LANGUAGE_TEXTS[language]["progress"].format(percent)
-    try:
-        await message.edit(progress_message)
-    except:
-        pass
-
-# Story Downloader Method with Progress
-async def GET_STORES_DATA(chat_id: str, story_id: int, message, language):
+# Story Downloader Method
+async def GET_STORES_DATA(chat_id: str, story_id: int):
     client = Client(":memory:", api_hash=Config.API_HASH, api_id=Config.API_ID, session_string=Config.SESSION, workers=2, no_updates=True)
     try:
         await client.connect()
         story = await client.get_stories(chat_id=chat_id, story_ids=[story_id])
         if not story:
             return False, None, None
-        # Use custom progress callback
-        media = await client.download_media(story[0], progress=lambda current, total: progress_callback(current, total, message, language))
+        media = await client.download_media(story[0], in_memory=True)
         description = story[0].caption if story[0].caption else "No description available."
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
@@ -171,13 +161,42 @@ async def ON_URL(app: Client, message: types.Message):
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
-    status, story_data, description = await GET_STORES_DATA(chat_id, story_id, downloading_message, language)
+    status, story_data, description = await GET_STORES_DATA(chat_id, story_id)
     if not status:
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
     await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
+
+# Broadcast to all users
+@app.on_message(filters.reply & filters.regex('^/broadcast'))
+async def broadcast_message(app: Client, message: types.Message):
+    if message.from_user.id != Config.SUDO:
+        return
+
+    data = json.load(open('./data.json'))
+    users = data['users']
+
+    if message.reply_to_message:
+        # Broadcast media or text based on the type of message
+        media = message.reply_to_message
+        caption = message.text.split('/broadcast', 1)[1].strip() if len(message.text.split('/broadcast', 1)) > 1 else ""
+        
+        # Send to all users
+        for user_id in users:
+            try:
+                if media.text:
+                    await app.send_message(user_id, media.text + "\n" + caption)
+                elif media.photo:
+                    await app.send_photo(user_id, media.photo.file_id, caption=caption)
+                elif media.video:
+                    await app.send_video(user_id, media.video.file_id, caption=caption)
+                elif media.document:
+                    await app.send_document(user_id, media.document.file_id, caption=caption)
+            except Exception as e:
+                print(f"Error broadcasting to user {user_id}: {e}")
+         await message.reply(LANGUAGE_TEXTS[language]["broadcast_success"])
 
 # Run the bot
 asyncio.run(app.run())
