@@ -7,12 +7,12 @@ import json
 
 # Bot Config Object
 class Config:
-    SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"
-    API_KEY = "7884364837:AAF4IQw1YshU2O8qwc1IFWl_gR18EPTdnAg"
-    API_HASH = "e51a3154d2e0c45e5ed70251d68382de"
-    API_ID = 15787995
-    SUDO = 7046488481
-    CHANNLS = ['Kali_Linux_BOTS']
+    SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"  # Pyrogram Sessions
+    API_KEY = "7884364837:AAF4IQw1YshU2O8qwc1IFWl_gR18EPTdnAg"  # Bot API Key
+    API_HASH = "e51a3154d2e0c45e5ed70251d68382de"  # API Hash
+    API_ID = 15787995  # API ID
+    SUDO = 7046488481  # Sudo ID
+    CHANNLS = ['Kali_Linux_BOTS']  # Channel List
 
 # Ensure required directories and files exist
 if not os.path.exists('./.session'):
@@ -65,20 +65,25 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
             return False, channel
     return True, None
 
-# Simulated GET_STORES_DATA function
-async def GET_STORES_DATA(chat_id, story_id):
-    # Simulate a successful fetch of story data
+# Story Downloader Method
+async def GET_STORES_DATA(chat_id: str, story_id: int):
+    client = Client(":memory:", api_hash=Config.API_HASH, api_id=Config.API_ID, session_string=Config.SESSION, workers=2, no_updates=True)
     try:
-        # Replace this with real story fetching logic
-        story_data = f"https://example.com/{chat_id}/{story_id}.mp4"
-        return True, story_data
+        await client.connect()
+        story = await client.get_stories(chat_id=chat_id, story_ids=[story_id])
+        if not story:
+            return False, None
+        data = await client.download_media(story[0], in_memory=True)
     except Exception as e:
+        print(e)
         return False, None
+    finally:
+        await client.disconnect()
+    return True, data
 
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
-    # Show language selection buttons
     keyboard = [
         [types.InlineKeyboardButton("فارسی", callback_data="lang_fa")],
         [types.InlineKeyboardButton("English", callback_data="lang_en")]
@@ -132,7 +137,6 @@ async def ON_URL(app: Client, message: types.Message):
         await message.reply(join_message, reply_markup=types.InlineKeyboardMarkup([[button]]))
         return
 
-    # Downloading message
     downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
 
     # Process URL
@@ -148,7 +152,7 @@ async def ON_URL(app: Client, message: types.Message):
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
-    # Get Story
+    # Download Story
     status, story_data = await GET_STORES_DATA(chat_id, story_id)
     if not status:
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
