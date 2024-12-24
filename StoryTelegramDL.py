@@ -167,22 +167,57 @@ async def ON_URL(app: Client, message: types.Message):
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
     await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
 
-# Broadcast message to all users
-@app.on_message(filters.private & filters.user(Config.SUDO))
+# Broadcast Command
+@app.on_message(filters.private & filters.regex('^/broadcast$'))
 async def broadcast_message(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    for user_id in data['users']:
-        try:
-            if message.text:
-                await app.send_message(user_id, message.text)
-            elif message.video:
-                await app.send_video(user_id, message.video.file_id, caption=message.caption)
-            elif message.document:
-                await app.send_document(user_id, message.document.file_id, caption=message.caption)
-            elif message.photo:
-                await app.send_photo(user_id, message.photo.file_id, caption=message.caption)
-        except Exception as e:
-            print(f"Error broadcasting to {user_id}: {e}")
+    if message.from_user.id != Config.SUDO:
+        return  # Only Sudo user can send the broadcast command
+
+    await app.send_message(message.chat.id, "Please send your message to broadcast to all users.")
+
+    # Wait for the message to broadcast
+    @app.on_message(filters.private)
+    async def on_broadcast_message(app: Client, broadcast_msg: types.Message):
+        if broadcast_msg.from_user.id != Config.SUDO:
+            return  # Only Sudo user can send messages for broadcast
+
+        data = json.load(open('./data.json'))
+        users = data['users']
+
+        if broadcast_msg.text:
+            for user_id in users:
+                try:
+                    await app.send_message(user_id, broadcast_msg.text)
+                except Exception as e:
+                    print(f"Error sending message to {user_id}: {e}")
+
+        elif broadcast_msg.photo:
+            for user_id in users:
+                try:
+                    await app.send_photo(user_id, broadcast_msg.photo)
+                except Exception as e:
+                    print(f"Error sending photo to {user_id}: {e}")
+
+        elif broadcast_msg.video:
+            for user_id in users:
+                try:
+                    await app.send_video(user_id, broadcast_msg.video)
+                except Exception as e:
+                    print(f"Error sending video to {user_id}: {e}")
+
+        elif broadcast_msg.document:
+            for user_id in users:
+                try:
+                    await app.send_document(user_id, broadcast_msg.document)
+                except Exception as e:
+                    print(f"Error sending document to {user_id}: {e}")
+
+        elif broadcast_msg.audio:
+            for user_id in users:
+                try:
+                    await app.send_audio(user_id, broadcast_msg.audio)
+                except Exception as e:
+                    print(f"Error sending audio to {user_id}: {e}")
 
 # Run the bot
 asyncio.run(app.run())
