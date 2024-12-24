@@ -183,20 +183,21 @@ async def broadcast_message(app: Client, message: types.Message):
         media = message.reply_to_message
         caption = message.text.split('/broadcast', 1)[1].strip() if len(message.text.split('/broadcast', 1)) > 1 else ""
         
-        # Send to all users
-        for user_id in users:
-            try:
-                if media.text:
-                    await app.send_message(user_id, media.text + "\n" + caption)
-                elif media.photo:
-                    await app.send_photo(user_id, media.photo.file_id, caption=caption)
-                elif media.video:
-                    await app.send_video(user_id, media.video.file_id, caption=caption)
-                elif media.document:
-                    await app.send_document(user_id, media.document.file_id, caption=caption)
-            except Exception as e:
-                print(f"Error broadcasting to user {user_id}: {e}")
-         await message.reply(LANGUAGE_TEXTS[language]["broadcast_success"])
+# Send to all users
+for user_id in users:
+    try:
+        if isinstance(media, types.Message):  # If the media is a regular text message
+            await app.send_message(user_id, media.text + "\n" + caption)
+        elif media.photo:  # If media is a photo
+            await app.send_photo(user_id, media.photo.file_id, caption=caption)
+        elif media.video:  # If media is a video
+            await app.send_video(user_id, media.video.file_id, caption=caption)
+        elif media.document:  # If media is a document
+            await app.send_document(user_id, media.document.file_id, caption=caption)
+    except Exception as e:
+        print(f"Error broadcasting to user {user_id}: {e}")
 
+# This line should be placed at the same indentation level as the 'for' loop.
+await message.reply(LANGUAGE_TEXTS[language]["broadcast_success"])
 # Run the bot
 asyncio.run(app.run())
