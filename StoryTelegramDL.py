@@ -97,6 +97,52 @@ async def GET_STORES_DATA(chat_id: str, story_id: int, message, language):
         await client.disconnect()
     return True, media, description
 
+# On Start and Language Selection
+@app.on_message(filters.private & filters.regex('^/start$'))
+async def ON_START_BOT(app: Client, message: types.Message):
+    data = json.load(open('./data.json'))
+    if message.from_user.id not in data['users']:
+        data['users'].append(message.from_user.id)
+        json.dump(data, open('./data.json', 'w'), indent=3)
+        await app.send_message(
+            chat_id=Config.SUDO,
+            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
+        )
+
+    keyboard = [
+        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa")],
+        [types.InlineKeyboardButton("English", callback_data="lang_en")]
+    ]
+    await message.reply("Please choose a language / لطفاً یک زبان انتخاب کنید.", reply_markup=types.InlineKeyboardMarkup(keyboard))
+
+# Handle Language Selection
+@app.on_callback_query(filters.regex('^lang_'))
+async def language_selection(app: Client, callback_query: types.CallbackQuery):
+    language = callback_query.data.split('_')[1]
+    user_id = str(callback_query.from_user.id)
+
+    data = json.load(open('./data.json'))
+    data['languages'][user_id] = language
+    json.dump(data, open('./data.json', 'w'), indent=3)
+
+    join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
+    button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
+    await callback_query.message.edit(text=join_message, reply_markup=types.InlineKeyboardMarkup([[button]]))
+
+# Verify Channel Join
+@app.on_callback_query(filters.regex('^check_join$'))
+async def check_join(app: Client, callback_query: types.CallbackQuery):
+    user_id = callback_query.from_user.id
+    data = json.load(open('./data.json'))
+    language = data['languages'].get(str(user_id), 'en')
+
+    status, channel = await CHECK_JOIN_MEMBER(user_id, Config.CHANNLS, Config.API_KEY)
+    if not status:
+        await callback_query.answer(LANGUAGE_TEXTS[language]["not_joined"], show_alert=True)
+        return
+
+    await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
+
 # On Send Story URL
 @app.on_message(filters.private & filters.text)
 async def ON_URL(app: Client, message: types.Message):
