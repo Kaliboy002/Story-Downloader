@@ -40,7 +40,7 @@ LANGUAGE_TEXTS = {
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
-        "no_story_found": "Sorry, this user does not have any stories available."
+        "progress": "Downloading... {}%",
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -50,7 +50,7 @@ LANGUAGE_TEXTS = {
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
-        "no_story_found": "متاسفانه این کاربر هیچ استوری ندارد."
+        "progress": "در حال دانلود... {}%",
     }
 }
 
@@ -70,15 +70,25 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
             return False, channel
     return True, None
 
-# Story Downloader Method
-async def GET_STORES_DATA(chat_id: str, story_id: int):
+# Progress Callback
+async def progress_callback(current, total, message, language):
+    percent = int((current / total) * 100)
+    progress_message = LANGUAGE_TEXTS[language]["progress"].format(percent)
+    try:
+        await message.edit(progress_message)
+    except:
+        pass
+
+# Story Downloader Method with Progress
+async def GET_STORES_DATA(chat_id: str, story_id: int, message, language):
     client = Client(":memory:", api_hash=Config.API_HASH, api_id=Config.API_ID, session_string=Config.SESSION, workers=2, no_updates=True)
     try:
         await client.connect()
         story = await client.get_stories(chat_id=chat_id, story_ids=[story_id])
         if not story:
             return False, None, None
-        media = await client.download_media(story[0], in_memory=True)
+        # Use custom progress callback
+        media = await client.download_media(story[0], progress=lambda current, total: progress_callback(current, total, message, language))
         description = story[0].caption if story[0].caption else "No description available."
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
@@ -87,53 +97,7 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
         await client.disconnect()
     return True, media, description
 
-# On Start and Language Selection
-@app.on_message(filters.private & filters.regex('^/start$'))
-async def ON_START_BOT(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    if message.from_user.id not in data['users']:
-        data['users'].append(message.from_user.id)
-        json.dump(data, open('./data.json', 'w'), indent=3)
-        await app.send_message(
-            chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
-        )
-
-    keyboard = [
-        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa")],
-        [types.InlineKeyboardButton("English", callback_data="lang_en")]
-    ]
-    await message.reply("Please choose a language / لطفاً یک زبان انتخاب کنید.", reply_markup=types.InlineKeyboardMarkup(keyboard))
-
-# Handle Language Selection
-@app.on_callback_query(filters.regex('^lang_'))
-async def language_selection(app: Client, callback_query: types.CallbackQuery):
-    language = callback_query.data.split('_')[1]
-    user_id = str(callback_query.from_user.id)
-
-    data = json.load(open('./data.json'))
-    data['languages'][user_id] = language
-    json.dump(data, open('./data.json', 'w'), indent=3)
-
-    join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
-    button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
-    await callback_query.message.edit(text=join_message, reply_markup=types.InlineKeyboardMarkup([[button]]))
-
-# Verify Channel Join
-@app.on_callback_query(filters.regex('^check_join$'))
-async def check_join(app: Client, callback_query: types.CallbackQuery):
-    user_id = callback_query.from_user.id
-    data = json.load(open('./data.json'))
-    language = data['languages'].get(str(user_id), 'en')
-
-    status, channel = await CHECK_JOIN_MEMBER(user_id, Config.CHANNLS, Config.API_KEY)
-    if not status:
-        await callback_query.answer(LANGUAGE_TEXTS[language]["not_joined"], show_alert=True)
-        return
-
-    await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
-
-# On Send Story URL or Username
+# On Send Story URL
 @app.on_message(filters.private & filters.text)
 async def ON_URL(app: Client, message: types.Message):
     user_id = str(message.from_user.id)
@@ -149,37 +113,25 @@ async def ON_URL(app: Client, message: types.Message):
 
     downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
 
-    # Check if the message is a URL or a username
-    text = message.text
-    if text.startswith('https://t.me/'):
-        try:
-            chat_id = text.split('/')[-3]
-            story_id = int(text.split('/')[-1])
-        except:
-            await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
-            return
+    url = message.text
+    if not url.startswith('https://t.me/'):
+        await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
+        return
 
-    elif text.startswith('@'):
-        username = text[1:]
-        try:
-            user = await app.get_users(username)
-            stories = await app.get_stories(user.id)
-            if not stories:
-                await downloading_message.edit(LANGUAGE_TEXTS[language]["no_story_found"])
-                return
-            story = stories[0]
-            media = await app.download_media(story, in_memory=True)
-            description = story.caption if story.caption else "No description available."
-        except Exception as e:
-            await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
-            return
+    try:
+        chat_id = url.split('/')[-3]
+        story_id = int(url.split('/')[-1])
+    except:
+        await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
+        return
 
-    else:
+    status, story_data, description = await GET_STORES_DATA(chat_id, story_id, downloading_message, language)
+    if not status:
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
-    await app.send_video(chat_id=message.chat.id, video=media, caption=description)
+    await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
 
 # Run the bot
 asyncio.run(app.run())
