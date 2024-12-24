@@ -165,27 +165,41 @@ async def ON_URL(app: Client, message: types.Message):
         await message.reply(LANGUAGE_TEXTS[language]["choose_option"], reply_markup=types.InlineKeyboardMarkup(options_keyboard))
         return
 
-    downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
+# Handle Download Story Options
+@app.on_callback_query(filters.regex('^(recent|archived|by_order)_'))
+async def handle_story_option(app: Client, callback_query: types.CallbackQuery):
+    option, username = callback_query.data.split('_')
+    user_id = callback_query.from_user.id
+    data = json.load(open('./data.json'))
+    language = data['languages'].get(str(user_id), 'en')
 
-    url = message.text  # Correct indentation here
-    if not url.startswith('https://t.me/'):
-        await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
-        return
+    downloading_message = await callback_query.message.reply(LANGUAGE_TEXTS[language]["downloading"])
 
     try:
-        chat_id = url.split('/')[-3]
-        story_id = int(url.split('/')[-1])
-    except:
-        await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
-        return
+        if option == 'recent':
+            stories = await app.get_user_stories(username)
+        elif option == 'archived':
+            stories = await app.get_user_archived_stories(username)
+        elif option == 'by_order':
+            stories = await app.get_user_stories(username, order=True)
 
-    status, story_data, description = await GET_STORES_DATA(chat_id, story_id)
-    if not status:
-        await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
-        return
+        if not stories:
+            await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
+            return
 
-    await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
-    await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
+        # Assuming you want to send all stories in the list
+        for story in stories:
+            status, story_data, description = await GET_STORES_DATA(username, story.id)
+            if not status:
+                await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
+                return
+            await app.send_video(chat_id=callback_query.message.chat.id, video=story_data, caption=description)
+
+        await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
+
+    except Exception as e:
+        await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
+        print(f"Error: {e}")
 
 # Run the bot
 asyncio.run(app.run())
