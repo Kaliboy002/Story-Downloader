@@ -165,9 +165,9 @@ async def ON_URL(app: Client, message: types.Message):
         await message.reply(LANGUAGE_TEXTS[language]["choose_option"], reply_markup=types.InlineKeyboardMarkup(options_keyboard))
         return
 
-downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
+    downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
 
-    url = message.text
+    url = message.text  # Correct indentation here
     if not url.startswith('https://t.me/'):
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
