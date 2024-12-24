@@ -23,7 +23,7 @@ if not os.path.exists('./data.json'):
 
 # Initialize Pyrogram Client
 app = Client(
-    "./.session/kral",
+    "./.session/bot",
     bot_token=Config.API_KEY,
     api_hash=Config.API_HASH,
     api_id=Config.API_ID,
@@ -59,12 +59,12 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
         try:
             api_url = f"https://api.telegram.org/bot{api_key}/getChatMember?chat_id=@{channel}&user_id={user_id}"
             response = requests.get(api_url).json()
-            if response.get('ok') and response.get('result', {}).get('status') in states:
+            if response.get('ok') and response['result']['status'] in states:
                 continue
             else:
                 return False, channel
         except Exception as e:
-            print(f"Error in CHECK_JOIN_MEMBER: {e}")
+            print(f"Error checking membership: {e}")
             return False, channel
     return True, None
 
