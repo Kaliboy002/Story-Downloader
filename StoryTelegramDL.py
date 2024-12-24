@@ -19,7 +19,7 @@ if not os.path.exists('./.session'):
     os.mkdir('./.session')
 
 if not os.path.exists('./data.json'):
-    json.dump({'users': {}, 'languages': {}}, open('./data.json', 'w'), indent=3)
+    json.dump({'users': [], 'languages': {}}, open('./data.json', 'w'), indent=3)
 
 # Initialize Pyrogram Client
 app = Client(
@@ -87,6 +87,16 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
+    # Notify Admin About New User
+    data = json.load(open('./data.json'))
+    if message.from_user.id not in data['users']:
+        data['users'].append(message.from_user.id)
+        json.dump(data, open('./data.json', 'w'), indent=3)
+        await app.send_message(
+            chat_id=Config.SUDO,
+            text=f"""↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or "None"} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"""
+        )
+
     keyboard = [
         [types.InlineKeyboardButton("فارسی", callback_data="lang_fa")],
         [types.InlineKeyboardButton("English", callback_data="lang_en")]
