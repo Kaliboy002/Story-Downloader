@@ -65,6 +65,16 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
             return False, channel
     return True, None
 
+# Simulated GET_STORES_DATA function
+async def GET_STORES_DATA(chat_id, story_id):
+    # Simulate a successful fetch of story data
+    try:
+        # Replace this with real story fetching logic
+        story_data = f"https://example.com/{chat_id}/{story_id}.mp4"
+        return True, story_data
+    except Exception as e:
+        return False, None
+
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
