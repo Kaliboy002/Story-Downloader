@@ -1,4 +1,3 @@
-# Required Modules
 from pyrogram import Client, types, filters, enums
 import asyncio
 import os
@@ -41,6 +40,7 @@ LANGUAGE_TEXTS = {
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
+        "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -51,6 +51,7 @@ LANGUAGE_TEXTS = {
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
+        "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
     }
 }
 
@@ -135,7 +136,13 @@ async def check_join(app: Client, callback_query: types.CallbackQuery):
         await callback_query.answer(LANGUAGE_TEXTS[language]["not_joined"], show_alert=True)
         return
 
+    image_url = LANGUAGE_TEXTS[language]["image_url"]
     await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
+    await app.send_photo(
+        chat_id=callback_query.message.chat.id,
+        photo=image_url,
+        caption=LANGUAGE_TEXTS[language]["welcome"]
+    )
 
 # On Send Story URL
 @app.on_message(filters.private & filters.text)
