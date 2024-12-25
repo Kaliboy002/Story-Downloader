@@ -3,7 +3,6 @@ import asyncio
 import os
 import requests
 import json
-from datetime import datetime
 
 # Bot Config Object
 class Config:
@@ -33,7 +32,7 @@ app = Client(
 # Language Texts
 LANGUAGE_TEXTS = {
     "en": {
-        "welcome": "Welcome to the Telegram Story Downloader bot! Send me the story link to download.",
+        "welcome": "Welcome to hell our services and about to break up ☝️ for sale your password 🔑 remember that when you can use of undefined variable index of this website uses the same the Telegram Story Downloader bot! Send me the story link to download.",
         "join_channel": "To use this bot, you must join our channel first:\n\n📣 @{}\nUse the buttons below to proceed.",
         "verify_join": "Check Join",
         "join_channel_btn": "Join Channel",
@@ -82,19 +81,12 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
             return False, None, None
         media = await client.download_media(story[0], in_memory=True)
         description = story[0].caption if story[0].caption else "No description available."
-        # Gathering additional story details
-        user = story[0].user
-        username = user.username if user.username else "No username"
-        first_name = user.first_name if user.first_name else "No first name"
-        last_name = user.last_name if user.last_name else "No last name"
-        date_posted = story[0].date.strftime("%Y-%m-%d %H:%M:%S")
-        story_details = f"Story posted by: {first_name} {last_name} (@{username})\nDate: {date_posted}\n\nDescription: {description}"
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
         return False, None, None
     finally:
         await client.disconnect()
-    return True, media, story_details
+    return True, media, description
 
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
