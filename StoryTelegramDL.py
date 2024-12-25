@@ -55,7 +55,7 @@ LANGUAGE_TEXTS = {
     }
 }
 
-# Check Join Method
+# Check Join Methodh
 async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
     states = ['administrator', 'creator', 'member', 'restricted']
     for channel in channels:
