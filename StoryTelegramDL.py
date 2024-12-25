@@ -3,7 +3,6 @@ import asyncio
 import os
 import requests
 import json
-from tqdm import tqdm
 
 # Bot Config Object
 class Config:
@@ -92,24 +91,6 @@ async def GET_STORES_DATA(chat_id: str, story_id: int, callback: callable):
     finally:
         await client.disconnect()
     return True, media, description, user_name, first_name, last_name, date
-
-# On Start and Language Selection
-@app.on_message(filters.private & filters.regex('^/start$'))
-async def ON_START_BOT(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    if message.from_user.id not in data['users']:
-        data['users'].append(message.from_user.id)
-        json.dump(data, open('./data.json', 'w'), indent=3)
-        await app.send_message(
-            chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
-        )
-
-    keyboard = [
-        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa"), types.InlineKeyboardButton("English", callback_data="lang_en")]
-    ]
-    await message.reply("Please choose a language / لطفاً یک زبان انتخاب کنید.", reply_markup=types.InlineKeyboardMarkup(keyboard))
-
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
 async def language_selection(app: Client, callback_query: types.CallbackQuery):
@@ -183,16 +164,13 @@ async def ON_URL(app: Client, message: types.Message):
         percent = (current / total) * 100
         downloading_message.edit(LANGUAGE_TEXTS[language]["downloading"].format(int(percent)))
 
-    status, story_data, description, user_name, first_name, last_name, date = await GET_STORES_DATA(chat_id, story_id, progress)
+    status, story_data, description = await GET_STORES_DATA(chat_id, story_id)
     if not status:
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
     # Detailed story info
     story_details = f"Story details:\n"
-    story_details += f"Name: {first_name} {last_name}\n"
-    story_details += f"Username: @{user_name}\n"
-    story_details += f"Posted on: {date}\n"
     story_details += f"Description: {description}"
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
