@@ -39,9 +39,9 @@ LANGUAGE_TEXTS = {
         "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
         "join_channel_btn": "Join Channel ⚡",
         "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
-        "downloading": "Downloading, please wait...",
-        "download_successful": "Download completed successfully!",
-        "error": "Sorry, there was an issue while downloading.",
+        "downloading": "<b>Downloading, please wait</b>...⏳🙃",
+        "download_successful": "<b>Download completed successfully</b> ✈️",
+        "error": "✗ Sorry, there was an issue while downloading 💔\nPlease check the link and try again ⚡",
         "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
     },
     "fa": {
