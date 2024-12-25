@@ -180,7 +180,7 @@ async def ON_URL(app: Client, message: types.Message):
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
 
-    # Check if the story is a photo
+    # Send the media without file method
     if isinstance(story_data, bytes):  # If it's an image
         await app.send_photo(chat_id=message.chat.id, photo=story_data, caption=description)
     else:  # If it's a video or other media
