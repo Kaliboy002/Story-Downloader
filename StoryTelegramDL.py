@@ -33,10 +33,10 @@ app = Client(
 LANGUAGE_TEXTS = {
     "en": {
         "welcome": "Welcome to hell our services and about to break up ☝️ for sale your password 🔑 remember that when you can use of undefined variable index of this website uses the same the Telegram Story Downloader bot! Send me the story link to download.",
-        "join_channel": "⚠️<b> To use this bot, you must first join our Telegram channels</b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership.",
-        "verify_join": "Check Join",
-        "join_channel_btn": "Join Channel",
-        "not_joined": "You are not a member of our channel. Please join and try again.",
+        "join_channel": "⚠️<b> To use this bot, you must first join our Telegram channel</b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
+        "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
+        "join_channel_btn": "Join Channel ⚡",
+        "not_joined": "🤨 You are not a member of our channel. Please join and try again ",
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
@@ -44,10 +44,11 @@ LANGUAGE_TEXTS = {
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
-        "join_channel": "<b>⚠️ برای استفاده از این ربات، نخست شما باید به کانال‌ های زیر عضو گردید</b>.\n\nدر غیر اینصورت این ربات برای شما کار نخواهد کرد. سپس روی دکمه | </b>عضـو شـدم 🔐<b> | کلیک کنید تا عضویت ربات خود را تأیید کنید",
-        "verify_join": "بررسی عضویت",
-        "join_channel_btn": "عضویت در کانال",
-        "not_joined": "شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
+        "join_channel": "<b>⚠️ برای استفاده از این ربات، نخست شما باید به کانال‌ های زیر عضو گردید</b>.\n\nدر غیر اینصورت این ربات برای شما کار نخواهد کرد. سپس روی دکمه | <b>عضـو شـدم 🔐 | </b>کلیک کنید تا عضویت ربات خود را تأیید کنید
+            ",
+        "verify_join": "عضـو شـدم 🔐",
+        "join_channel_btn": "عضـو کانال ⚡",
+        "not_joined": "🤨 شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
