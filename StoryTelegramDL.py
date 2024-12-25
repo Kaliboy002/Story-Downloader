@@ -32,17 +32,17 @@ app = Client(
 # Language Texts
 LANGUAGE_TEXTS = {
     "en": {
-        "welcome": "<b><i>Welcome to TG Story Downloader</b></i> \n\n✈️ You can easily download telegram <b>stories and archived posts </b>of any user in high quality and speed\n\n<b>⁀➴ Just simply send me the link of that story or archived post</b> 🖇️🙂",
+        "welcome": "<b><i>Welcome to TG Story Downloader!</b></i> \n\n✈️ You can easily download telegram <b>stories and archived posts </b>of any user in high quality and speed⚡\n\n<b>⁀➴ Just simply send me the link of that story or archived post</b> 🖇️🙂",
         "join_channel": "⚠️<b><i> To use this bot, you must first join our Telegram channel</i></b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
         "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
-        "join_channel_btn": "Join Channel ⚡",
+        "join_channel_btn": "Jᴏɪɴ ᴄʜᴀɴɴᴇʟ⚡️",
         "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
         "downloading": "<b>Downloading, please wait</b>...⏳🙃",
         "download_successful": "<b>Download completed successfully</b> ✈️",
         "error": "✗ Sorry, there was an issue while downloading 💔\nPlease check the link and try again ⚡"
     },
     "fa": {
-        "welcome": "<b>به ربات دانلود استوری تلگرام خوش آمدید!</b>\n\n✈️ شما می‌توانید به‌راحتی<b> استوری‌ها و پست‌های آرشیو شده </b>هر کاربری را با کیفیت و سرعت بالا دانلود کنید⚡\n\n<b>➴⁀  کافیست لینک آن استوری یا پست آرشیو شده را برای من ارسال کنید 🖇️🙂</b>",
+        "welcome": "<b>به ربات دانلود استوری تلگرام خوش آمدید!</b>\n\n✈️ شما می‌توانید به‌راحتی<b> استوری‌ها و پست‌های آرشیو شده </b>هر کاربری را با کیفیت و سرعت بالا دانلود کنید⚡\n\n<b>✦ کافیست لینک آن استوری یا پست آرشیو شده را برای من ارسال کنید 🖇️🙂</b>",
         "join_channel": (
             "<b>⚠️ برای استفاده از این ربات، نخست شما باید به کانال‌ های زیر عضو گردید</b>.\n\n"
             "در غیر اینصورت این ربات برای شما کار نخواهد کرد. سپس روی دکمه | <b>عضـو شـدم 🔐 | </b>"
@@ -103,11 +103,11 @@ async def ON_START_BOT(app: Client, message: types.Message):
         )
 
     keyboard = [
-        [types.InlineKeyboardButton("فارســی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
+        [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
     await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
             "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-            "🇦🇫 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
+            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
