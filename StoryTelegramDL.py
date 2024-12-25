@@ -32,7 +32,7 @@ LANGUAGE_TEXTS = {
     "en": {
         "welcome": "Welcome to the Telegram Story Downloader bot! Send me the story link to download.",
         "join_channel": "⚠️<b> To use this bot, you must first join our Telegram channel:</b> \n📣 @{} \nAfter joining, click the buttons below.",
-        "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
+        "verify_join": "🔐Joined",
         "join_channel_btn": "Join Channel ⚡",
         "not_joined": "You are not a member of our channel. Please join and try again.",
         "downloading": "Downloading, please wait...",
@@ -65,22 +65,6 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
             print(f"Error checking membership: {e}")
             return False, channel
     return True, None
-
-async def GET_STORES_DATA(chat_id: str, story_id: int):
-    client = Client(":memory:", api_hash=Config.API_HASH, api_id=Config.API_ID, session_string=Config.SESSION, workers=2, no_updates=True)
-    try:
-        await client.connect()
-        story = await client.get_stories(chat_id=chat_id, story_ids=[story_id])
-        if not story:
-            return False, None, None
-        media = await client.download_media(story[0], in_memory=True)
-        description = story[0].caption if story[0].caption else "No description available."
-    except Exception as e:
-        print(f"Error in GET_STORES_DATA: {e}")
-        return False, None, None
-    finally:
-        await client.disconnect()
-    return True, media, description
 
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
