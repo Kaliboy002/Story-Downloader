@@ -101,9 +101,11 @@ async def ON_START_BOT(app: Client, message: types.Message):
         )
 
     keyboard = [
-        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa"), types.InlineKeyboardButton("English", callback_data="lang_en")]
+        [types.InlineKeyboardButton("فارســی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
-    await message.reply("Please choose a language / لطفاً یک زبان انتخاب کنید.", reply_markup=types.InlineKeyboardMarkup(keyboard))
+    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
+            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+            "🇦🇫 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
