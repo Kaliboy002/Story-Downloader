@@ -1,3 +1,4 @@
+
 # Required Modules
 from pyrogram import Client, types, filters, enums
 import asyncio
@@ -166,23 +167,6 @@ async def ON_URL(app: Client, message: types.Message):
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
     await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
-
-# Broadcast message to all users
-@app.on_message(filters.private & filters.user(Config.SUDO))
-async def broadcast_message(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    for user_id in data['users']:
-        try:
-            if message.text:
-                await app.send_message(user_id, message.text)
-            elif message.video:
-                await app.send_video(user_id, message.video.file_id, caption=message.caption)
-            elif message.document:
-                await app.send_document(user_id, message.document.file_id, caption=message.caption)
-            elif message.photo:
-                await app.send_photo(user_id, message.photo.file_id, caption=message.caption)
-        except Exception as e:
-            print(f"Error broadcasting to {user_id}: {e}")
 
 # Run the bot
 asyncio.run(app.run())
