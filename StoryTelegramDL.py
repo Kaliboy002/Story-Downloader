@@ -1,5 +1,3 @@
-
-
 from pyrogram import Client, types, filters, enums
 import asyncio
 import os
@@ -41,8 +39,7 @@ LANGUAGE_TEXTS = {
         "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
         "downloading": "<b>Downloading, please wait</b>...⏳🙃",
         "download_successful": "<b>Download completed successfully</b> ✈️",
-        "error": "✗ Sorry, there was an issue while downloading 💔\nPlease check the link and try again ⚡",
-        "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
+        "error": "✗ Sorry, there was an issue while downloading 💔\nPlease check the link and try again ⚡"
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
@@ -56,8 +53,7 @@ LANGUAGE_TEXTS = {
         "not_joined": "🤨 شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
         "downloading": "<b>در حال دانلود، لطفاً صبر کنید</b> ...⏳🙃",
         "download_successful": "<b>دانلود با موفقیت انجام شد ✈️</b>",
-        "error": "✗ متاسفانه مشکلی در دانلود پیش آمد 💔\nلطفا لینک را بررسی و دوباره تلاش نماید⚡",
-        "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
+        "error": "✗ متاسفانه مشکلی در دانلود پیش آمد 💔\nلطفا لینک را بررسی و دوباره تلاش نماید⚡"
     }
 }
 
@@ -144,13 +140,7 @@ async def check_join(app: Client, callback_query: types.CallbackQuery):
         await callback_query.answer(LANGUAGE_TEXTS[language]["not_joined"], show_alert=True)
         return
 
-    image_url = LANGUAGE_TEXTS[language]["image_url"]
     await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
-    await app.send_photo(
-        chat_id=callback_query.message.chat.id,
-        photo=image_url,
-        caption=LANGUAGE_TEXTS[language]["welcome"]
-    )
 
 # On Send Story URL
 @app.on_message(filters.private & filters.text)
