@@ -176,7 +176,3 @@ async def ON_URL(app: Client, message: types.Message):
 
 # Run the bot
 asyncio.run(app.run())
-
-
-
-Send me full code must be more than 180 line codes not less
