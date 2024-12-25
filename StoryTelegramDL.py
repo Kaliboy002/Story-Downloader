@@ -1,4 +1,5 @@
-# Required Modules
+
+
 from pyrogram import Client, types, filters, enums
 import asyncio
 import os
@@ -8,7 +9,7 @@ import json
 # Bot Config Object
 class Config:
     SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"  # Pyrogram Sessions
-    API_KEY = "7884364837:AAF4IQw1YshU2O8qwc1IFWl_gR18EPTdnAg"  # Bot API Key
+    API_KEY = "7628087790:AAH0Rbq0_UeMcEMVkUjFYr_V9YBFVh2vlE0"  # Bot API Key
     API_HASH = "e51a3154d2e0c45e5ed70251d68382de"  # API Hash
     API_ID = 15787995  # API ID
     SUDO = 7046488481  # Sudo ID
@@ -34,23 +35,29 @@ app = Client(
 LANGUAGE_TEXTS = {
     "en": {
         "welcome": "Welcome to the Telegram Story Downloader bot! Send me the story link to download.",
-        "join_channel": "To use this bot, you must join our channel first:\n\n📣 @{}\nUse the buttons below to proceed.",
-        "verify_join": "Check Join",
-        "join_channel_btn": "Join Channel",
-        "not_joined": "You are not a member of our channel. Please join and try again.",
+        "join_channel": "⚠️<b> To use this bot, you must first join our Telegram channel</b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
+        "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
+        "join_channel_btn": "Join Channel ⚡",
+        "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
+        "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
-        "join_channel": "برای استفاده از این ربات ابتدا باید به کانال ما بپیوندید:\n\n📣 @{}\nاز دکمه‌های زیر برای ادامه استفاده کنید.",
-        "verify_join": "بررسی عضویت",
-        "join_channel_btn": "عضویت در کانال",
-        "not_joined": "شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
+        "join_channel": (
+            "<b>⚠️ برای استفاده از این ربات، نخست شما باید به کانال‌ های زیر عضو گردید</b>.\n\n"
+            "در غیر اینصورت این ربات برای شما کار نخواهد کرد. سپس روی دکمه | <b>عضـو شـدم 🔐 | </b>"
+            "کلیک کنید تا عضویت ربات خود را تأیید کنید."
+        ),
+        "verify_join": "عضـو شـدم 🔐",
+        "join_channel_btn": "عضـو کانال ⚡",
+        "not_joined": "🤨 شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
+        "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
     }
 }
 
@@ -100,9 +107,11 @@ async def ON_START_BOT(app: Client, message: types.Message):
         )
 
     keyboard = [
-        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa"), types.InlineKeyboardButton("English", callback_data="lang_en")]
+        [types.InlineKeyboardButton("فارســی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
-    await message.reply("Please choose a language / لطفاً یک زبان انتخاب کنید.", reply_markup=types.InlineKeyboardMarkup(keyboard))
+    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
+            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+            "🇦🇫 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
@@ -135,7 +144,13 @@ async def check_join(app: Client, callback_query: types.CallbackQuery):
         await callback_query.answer(LANGUAGE_TEXTS[language]["not_joined"], show_alert=True)
         return
 
+    image_url = LANGUAGE_TEXTS[language]["image_url"]
     await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
+    await app.send_photo(
+        chat_id=callback_query.message.chat.id,
+        photo=image_url,
+        caption=LANGUAGE_TEXTS[language]["welcome"]
+    )
 
 # On Send Story URL
 @app.on_message(filters.private & filters.text)
