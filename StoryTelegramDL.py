@@ -3,6 +3,7 @@ import asyncio
 import os
 import requests
 import json
+from tqdm import tqdm
 
 # Bot Config Object
 class Config:
@@ -37,7 +38,7 @@ LANGUAGE_TEXTS = {
         "verify_join": "Check Join",
         "join_channel_btn": "Join Channel",
         "not_joined": "You are not a member of our channel. Please join and try again.",
-        "downloading": "Downloading, please wait...",
+        "downloading": "Downloading, please wait... {0}%",
         "download_successful": "Download completed successfully!",
         "error": "Sorry, there was an issue while downloading.",
         "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
@@ -48,7 +49,7 @@ LANGUAGE_TEXTS = {
         "verify_join": "بررسی عضویت",
         "join_channel_btn": "عضویت در کانال",
         "not_joined": "شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
-        "downloading": "در حال دانلود، لطفاً صبر کنید...",
+        "downloading": "در حال دانلود، لطفاً صبر کنید... {0}%",
         "download_successful": "دانلود با موفقیت انجام شد!",
         "error": "متاسفانه مشکلی در دانلود پیش آمده است.",
         "image_url": "https://AnonyDL.tlspro.space/AgACAgUAAxkBAAJBpmdrjKemUvIM73wpC9aTUphJe1RBAAJavjEbrDphVyhrE5AaRcrCAQADAgADeQADNgQ/65357649.jpg"
@@ -71,22 +72,26 @@ async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
             return False, channel
     return True, None
 
-# Story Downloader Method
-async def GET_STORES_DATA(chat_id: str, story_id: int):
+# Story Downloader Method with Progress
+async def GET_STORES_DATA(chat_id: str, story_id: int, callback: callable):
     client = Client(":memory:", api_hash=Config.API_HASH, api_id=Config.API_ID, session_string=Config.SESSION, workers=2, no_updates=True)
     try:
         await client.connect()
         story = await client.get_stories(chat_id=chat_id, story_ids=[story_id])
         if not story:
             return False, None, None
-        media = await client.download_media(story[0], in_memory=True)
+        media = await client.download_media(story[0], in_memory=True, progress=callback)
         description = story[0].caption if story[0].caption else "No description available."
+        user_name = story[0].user.username if story[0].user.username else "N/A"
+        first_name = story[0].user.first_name if story[0].user.first_name else "N/A"
+        last_name = story[0].user.last_name if story[0].user.last_name else "N/A"
+        date = story[0].date.strftime("%Y-%m-%d %H:%M:%S")
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
         return False, None, None
     finally:
         await client.disconnect()
-    return True, media, description
+    return True, media, description, user_name, first_name, last_name, date
 
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
@@ -143,8 +148,7 @@ async def check_join(app: Client, callback_query: types.CallbackQuery):
         photo=image_url,
         caption=LANGUAGE_TEXTS[language]["welcome"]
     )
-
-# On Send Story URL
+    # On Send Story URL
 @app.on_message(filters.private & filters.text)
 async def ON_URL(app: Client, message: types.Message):
     user_id = str(message.from_user.id)
@@ -159,7 +163,7 @@ async def ON_URL(app: Client, message: types.Message):
         await message.reply(join_message, reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]]))
         return
 
-    downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
+    downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"].format(0))
 
     url = message.text
     if not url.startswith('https://t.me/'):
@@ -173,13 +177,32 @@ async def ON_URL(app: Client, message: types.Message):
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
-    status, story_data, description = await GET_STORES_DATA(chat_id, story_id)
+    # Callback function for progress
+    def progress(current, total):
+        percent = (current / total) * 100
+        asyncio.create_task(downloading_message.edit(LANGUAGE_TEXTS[language]["downloading"].format(int(percent))))
+
+    status, story_data, description, user_name, first_name, last_name, date = await GET_STORES_DATA(chat_id, story_id, progress)
     if not status:
         await downloading_message.edit(LANGUAGE_TEXTS[language]["error"])
         return
 
+    # Detailed story info
+    story_details = f"Story details:\n"
+    story_details += f"Name: {first_name} {last_name}\n"
+    story_details += f"Username: @{user_name}\n"
+    story_details += f"Posted on: {date}\n"
+    story_details += f"Description: {description}"
+
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
-    await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
+
+    # Send story to user
+    await app.send_video(
+        chat_id=message.chat.id,
+        video=story_data,
+        caption=story_details
+    )
 
 # Run the bot
 asyncio.run(app.run())
+
