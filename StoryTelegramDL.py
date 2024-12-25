@@ -7,7 +7,7 @@ import json
 # Bot Config Object
 class Config:
     SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"  # Pyrogram Sessions
-    API_KEY = "7628087790:AAH0Rbq0_UeMcEMVkUjFYr_V9YBFVh2vlE0"  # Bot API Key
+    API_KEY = "7909997145:AAG7fta-bGYoADJHumbx2uGb8Tw-uqbUs4Q"  # Bot API Key
     API_HASH = "e51a3154d2e0c45e5ed70251d68382de"  # API Hash
     API_ID = 15787995  # API ID
     SUDO = 7046488481  # Sudo ID
@@ -83,6 +83,8 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
             return False, None, None
         media = await client.download_media(story[0], in_memory=True)
         description = story[0].caption if story[0].caption else "No description available."
+        # Add "Saved by @Tgstorybot" to the description
+        description += "\n\n<b>Saved By ➣ @TGStoryXBot"
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
         return False, None, None
@@ -177,7 +179,12 @@ async def ON_URL(app: Client, message: types.Message):
         return
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
-    await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
+
+    # Send the media without file method
+    if isinstance(story_data, bytes):  # If it's an image
+        await app.send_photo(chat_id=message.chat.id, photo=story_data, caption=description)
+    else:  # If it's a video or other media
+        await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
 
 # Run the bot
 asyncio.run(app.run())
