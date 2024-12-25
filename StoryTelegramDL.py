@@ -83,6 +83,8 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
             return False, None, None
         media = await client.download_media(story[0], in_memory=True)
         description = story[0].caption if story[0].caption else "No description available."
+        # Add "Saved by @Tgstorybot" to the description
+        description += "\n\nSaved by @Tgstorybot"
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
         return False, None, None
@@ -177,7 +179,12 @@ async def ON_URL(app: Client, message: types.Message):
         return
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
-    await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
+
+    # Check if the story is a photo
+    if isinstance(story_data, bytes):  # If it's an image
+        await app.send_photo(chat_id=message.chat.id, photo=story_data, caption=description)
+    else:  # If it's a video or other media
+        await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
 
 # Run the bot
 asyncio.run(app.run())
