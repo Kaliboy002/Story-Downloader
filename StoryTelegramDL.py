@@ -32,8 +32,8 @@ app = Client(
 # Language Texts
 LANGUAGE_TEXTS = {
     "en": {
-        "welcome": "Welcome to the Telegram Story Downloader bot! Send me the story link to download.",
-        "join_channel": "⚠️<b> To use this bot, you must first join our Telegram channel</b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
+        "welcome": "<b><i>Welcome to TG Story Downloader</b></i> \n\n✈️ You can easily download telegram <b>stories and archived posts </b>of any user in high quality and speed\n\n<b>⁀➴ Just simply send me the link of that story or archived post</b> 🖇️🙂",
+        "join_channel": "⚠️<b><i> To use this bot, you must first join our Telegram channel</i></b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
         "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
         "join_channel_btn": "Join Channel ⚡",
         "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
