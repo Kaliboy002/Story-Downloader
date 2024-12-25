@@ -7,12 +7,12 @@ from tqdm import tqdm
 
 # Bot Config Object
 class Config:
-    SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"  # Pyrogram Sessions
-    API_KEY = "7884364837:AAF4IQw1YshU2O8qwc1IFWl_gR18EPTdnAg"  # Bot API Key
-    API_HASH = "e51a3154d2e0c45e5ed70251d68382de"  # API Hash
-    API_ID = 15787995  # API ID
-    SUDO = 7046488481  # Sudo ID
-    CHANNLS = ['Kali_Linux_BOTS']  # Channel List
+    SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"
+    API_KEY = "7884364837:AAF4IQw1YshU2O8qwc1IFWl_gR18EPTdnAg"
+    API_HASH = "e51a3154d2e0c45e5ed70251d68382de"
+    API_ID = 15787995
+    SUDO = 7046488481
+    CHANNLS = ['Kali_Linux_BOTS']
 
 # Ensure required directories and files exist
 if not os.path.exists('./.session'):
@@ -79,7 +79,7 @@ async def GET_STORES_DATA(chat_id: str, story_id: int, callback: callable):
         await client.connect()
         story = await client.get_stories(chat_id=chat_id, story_ids=[story_id])
         if not story:
-            return False, None, None
+            return False, None, "No description", "N/A", "N/A", "N/A", "N/A"
         media = await client.download_media(story[0], in_memory=True, progress=callback)
         description = story[0].caption if story[0].caption else "No description available."
         user_name = story[0].user.username if story[0].user.username else "N/A"
@@ -88,7 +88,7 @@ async def GET_STORES_DATA(chat_id: str, story_id: int, callback: callable):
         date = story[0].date.strftime("%Y-%m-%d %H:%M:%S")
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
-        return False, None, None
+        return False, None, "Error retrieving story", "N/A", "N/A", "N/A", "N/A"
     finally:
         await client.disconnect()
     return True, media, description, user_name, first_name, last_name, date
@@ -148,7 +148,8 @@ async def check_join(app: Client, callback_query: types.CallbackQuery):
         photo=image_url,
         caption=LANGUAGE_TEXTS[language]["welcome"]
     )
-    # On Send Story URL
+
+# On Send Story URL
 @app.on_message(filters.private & filters.text)
 async def ON_URL(app: Client, message: types.Message):
     user_id = str(message.from_user.id)
@@ -180,7 +181,7 @@ async def ON_URL(app: Client, message: types.Message):
     # Callback function for progress
     def progress(current, total):
         percent = (current / total) * 100
-        asyncio.create_task(downloading_message.edit(LANGUAGE_TEXTS[language]["downloading"].format(int(percent))))
+        downloading_message.edit(LANGUAGE_TEXTS[language]["downloading"].format(int(percent)))
 
     status, story_data, description, user_name, first_name, last_name, date = await GET_STORES_DATA(chat_id, story_id, progress)
     if not status:
@@ -205,4 +206,3 @@ async def ON_URL(app: Client, message: types.Message):
 
 # Run the bot
 asyncio.run(app.run())
-
