@@ -84,7 +84,7 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
         media = await client.download_media(story[0], in_memory=True)
         description = story[0].caption if story[0].caption else "No description available."
         # Add "Saved by @Tgstorybot" to the description
-        description += "\n\nSaved by @Tgstorybot"
+        description += "\n\n<b>Saved By ➣</b> @TGStoryXBot"
     except Exception as e:
         print(f"Error in GET_STORES_DATA: {e}")
         return False, None, None
