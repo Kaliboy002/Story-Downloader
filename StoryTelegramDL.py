@@ -34,8 +34,9 @@ app = Client(
 LANGUAGE_TEXTS = {
     "en": {
         "welcome": "Welcome to the Telegram Story Downloader bot! Send me the story link to download.",
-        "join_channel": "To use this bot, you must join our channel first:\n\n📣 @{}\nClick the button below to verify your membership.",
+        "join_channel": "To use this bot, you must join our channel first:\n\n📣 @{}\nUse the buttons below to proceed.",
         "verify_join": "Check Join",
+        "join_channel_btn": "Join Channel",
         "not_joined": "You are not a member of our channel. Please join and try again.",
         "downloading": "Downloading, please wait...",
         "download_successful": "Download completed successfully!",
@@ -43,8 +44,9 @@ LANGUAGE_TEXTS = {
     },
     "fa": {
         "welcome": "به ربات دانلود استوری تلگرام خوش آمدید! لینک استوری را برای دانلود ارسال کنید.",
-        "join_channel": "برای استفاده از این ربات ابتدا باید به کانال ما بپیوندید:\n\n📣 @{}\nدکمه زیر را برای تایید عضویت کلیک کنید.",
+        "join_channel": "برای استفاده از این ربات ابتدا باید به کانال ما بپیوندید:\n\n📣 @{}\nاز دکمه‌های زیر برای ادامه استفاده کنید.",
         "verify_join": "بررسی عضویت",
+        "join_channel_btn": "عضویت در کانال",
         "not_joined": "شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
         "downloading": "در حال دانلود، لطفاً صبر کنید...",
         "download_successful": "دانلود با موفقیت انجام شد!",
@@ -98,8 +100,7 @@ async def ON_START_BOT(app: Client, message: types.Message):
         )
 
     keyboard = [
-        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa")],
-        [types.InlineKeyboardButton("English", callback_data="lang_en")]
+        [types.InlineKeyboardButton("فارسی", callback_data="lang_fa"), types.InlineKeyboardButton("English", callback_data="lang_en")]
     ]
     await message.reply("Please choose a language / لطفاً یک زبان انتخاب کنید.", reply_markup=types.InlineKeyboardMarkup(keyboard))
 
@@ -114,8 +115,13 @@ async def language_selection(app: Client, callback_query: types.CallbackQuery):
     json.dump(data, open('./data.json', 'w'), indent=3)
 
     join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
-    button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
-    await callback_query.message.edit(text=join_message, reply_markup=types.InlineKeyboardMarkup([[button]]))
+    join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
+    verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
+
+    await callback_query.message.edit(
+        text=join_message,
+        reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
+    )
 
 # Verify Channel Join
 @app.on_callback_query(filters.regex('^check_join$'))
@@ -141,8 +147,9 @@ async def ON_URL(app: Client, message: types.Message):
     status, channel = await CHECK_JOIN_MEMBER(message.from_user.id, Config.CHANNLS, Config.API_KEY)
     if not status:
         join_message = LANGUAGE_TEXTS[language]["join_channel"].format(channel)
-        button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
-        await message.reply(join_message, reply_markup=types.InlineKeyboardMarkup([[button]]))
+        join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{channel}")
+        verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
+        await message.reply(join_message, reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]]))
         return
 
     downloading_message = await message.reply(LANGUAGE_TEXTS[language]["downloading"])
@@ -166,52 +173,6 @@ async def ON_URL(app: Client, message: types.Message):
 
     await downloading_message.edit(LANGUAGE_TEXTS[language]["download_successful"])
     await app.send_video(chat_id=message.chat.id, video=story_data, caption=description)
-
-# Broadcast Command
-@app.on_message(filters.private & filters.regex('^/broadcast$'))
-async def broadcast_message(app: Client, message: types.Message):
-    if message.from_user.id != Config.SUDO:
-        return  # Only Sudo user can send the broadcast command
-
-    await app.send_message(message.chat.id, "Please send your message to broadcast to all users.")
-
-    # Wait for the message to broadcast
-    @app.on_message(filters.private)
-    async def on_broadcast_message(app: Client, broadcast_msg: types.Message):
-        if broadcast_msg.from_user.id != Config.SUDO:
-            return  # Only Sudo user can send the broadcast message
-
-        data = json.load(open('./data.json'))
-        users = data['users']
-        
-        # Checking if the message contains media (photo, video, file) or text
-        if broadcast_msg.text:
-            message_text = broadcast_msg.text
-            media = None
-        elif broadcast_msg.photo:
-            message_text = None
-            media = broadcast_msg.photo.file_id
-        elif broadcast_msg.video:
-            message_text = None
-            media = broadcast_msg.video.file_id
-        elif broadcast_msg.document:
-            message_text = None
-            media = broadcast_msg.document.file_id
-        else:
-            message_text = None
-            media = None
-
-        # Broadcast the message to all users
-        for user_id in users:
-            try:
-                if message_text:
-                    await app.send_message(user_id, message_text)
-                if media:
-                    await app.send_media_group(user_id, [types.InputMedia(media)])
-            except Exception as e:
-                print(f"Error broadcasting to {user_id}: {e}")
-
-        await app.send_message(message.chat.id, "Broadcast completed!")
 
 # Run the bot
 asyncio.run(app.run())
