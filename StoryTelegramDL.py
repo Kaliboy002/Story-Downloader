@@ -140,25 +140,33 @@ async def ON_START_BOT(app: Client, message: types.Message):
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
 async def language_selection(app: Client, callback_query: types.CallbackQuery):
+    # Extract language and user ID
     language = callback_query.data.split('_')[1]
-    user_id = str(callback_query.from_user.id)
+    user_id = callback_query.from_user.id
 
-user_id = callback_query.from_user.id
+    # Update the user's language in the database
+    users_collection.update_one({"user_id": user_id}, {"$set": {"language": language}}, upsert=True)
 
-# Update the user's language in the database
-users_collection.update_one({"user_id": user_id}, {"$set": {"language": language}}, upsert=True)
-
-if Config.FORCE_SUBSCRIBE:
-    join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
-    join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
-    verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
-    await callback_query.message.edit(
-        text=join_message,
-        reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
-    )
-else:
-    await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
-
+    # Check if FORCE_SUBSCRIBE is enabled
+    if Config.FORCE_SUBSCRIBE:
+        # Generate join message and buttons
+        join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
+        join_button = types.InlineKeyboardButton(
+            LANGUAGE_TEXTS[language]["join_channel_btn"],
+            url=f"https://t.me/{Config.CHANNLS[0]}"
+        )
+        verify_button = types.InlineKeyboardButton(
+            LANGUAGE_TEXTS[language]["verify_join"],
+            callback_data="check_join"
+        )
+        # Edit the message with join details
+        await callback_query.message.edit(
+            text=join_message,
+            reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
+        )
+    else:
+        # Send welcome message if FORCE_SUBSCRIBE is disabled
+        await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
 # Check Join Method
 async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
     states = ['administrator', 'creator', 'member', 'restricted']
