@@ -30,6 +30,47 @@ app = Client(
     parse_mode=enums.ParseMode.DEFAULT
 )
 
+@app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
+async def broadcast_message(app: Client, message: types.Message):
+    # Load users from the data file
+    data = json.load(open('./data.json'))
+    users = data.get("users", [])
+
+    if not users:
+        await message.reply("No users available to broadcast.")
+        return
+
+    # The replied message to be broadcasted
+    broadcast_content = message.reply_to_message
+
+    # Counter to track successful and failed broadcasts
+    success_count, fail_count = 0, 0
+
+    # Broadcast the message to each user
+    for index, user_id in enumerate(users):
+        try:
+            if broadcast_content.text:
+                await app.send_message(chat_id=user_id, text=broadcast_content.text)
+            elif broadcast_content.photo:
+                await app.send_photo(chat_id=user_id, photo=broadcast_content.photo.file_id, caption=broadcast_content.caption or "")
+            elif broadcast_content.video:
+                await app.send_video(chat_id=user_id, video=broadcast_content.video.file_id, caption=broadcast_content.caption or "")
+            elif broadcast_content.document:
+                await app.send_document(chat_id=user_id, document=broadcast_content.document.file_id, caption=broadcast_content.caption or "")
+            success_count += 1
+        except Exception as e:
+            print(f"Failed to send message to {user_id}: {e}")
+            fail_count += 1
+            continue
+
+        # Periodically update progress to the admin
+        if (success_count + fail_count) % 10 == 0:
+            await message.reply(f"Progress: {success_count + fail_count}/{len(users)} sent.")
+
+    # Send a summary to the admin
+    await message.reply(f"Broadcast completed.\nSuccess: {success_count}\nFailed: {fail_count}")
+
+
 # Language Texts (No changes here)
 LANGUAGE_TEXTS = {
     "en": {
