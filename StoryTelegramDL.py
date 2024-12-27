@@ -4,17 +4,11 @@ import os
 import requests
 import json
 from pymongo import MongoClient
-from datetime import datetime
 
-# MongoDB Configuration
-MONGO_URL = "mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0"  # Replace with your MongoDB connection URL
-DATABASE_NAME = "shah"     # Name of your database
-
-# Initialize MongoDB Client
-client = MongoClient(MONGO_URL)
-db = client[DATABASE_NAME]
-users_collection = db["users"]  # Collection for storing user information
-errors_collection = db["errors"]  # New collection for storing error logs
+# MongoDB setup
+client = MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0")
+db = client['shah']
+users_collection = db['users']
 
 # Bot Config Object
 class Config:
@@ -42,19 +36,9 @@ app = Client(
     parse_mode=enums.ParseMode.DEFAULT
 )
 
-# Modified error handling to log to the database
-async def log_error_to_db(user_id, error_message):
-    error_data = {
-        "user_id": user_id,
-        "error_message": error_message,
-        "timestamp": datetime.utcnow()
-    }
-    # Insert the error data into the MongoDB collection
-    errors_collection.insert_one(error_data)
-
-@app.on_message(filters.private & filters.user(Config.SUDO) & filters.command("broadcast"))
+@app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Load users from MongoDB
+    # Get all user IDs from MongoDB
     users = [user['user_id'] for user in users_collection.find()]
 
     if not users:
@@ -68,7 +52,7 @@ async def broadcast_message(app: Client, message: types.Message):
     success_count, fail_count = 0, 0
 
     # Broadcast the message to each user
-    for user_id in users:
+    for index, user_id in enumerate(users):
         try:
             if broadcast_content.text:
                 await app.send_message(chat_id=user_id, text=broadcast_content.text)
@@ -82,7 +66,6 @@ async def broadcast_message(app: Client, message: types.Message):
         except Exception as e:
             print(f"Failed to send message to {user_id}: {e}")
             fail_count += 1
-            await log_error_to_db(user_id, f"Broadcast failed: {e}")
             continue
 
         # Periodically update progress to the admin
@@ -121,66 +104,55 @@ LANGUAGE_TEXTS = {
     }
 }
 
-#start
+# On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
-    user_id = message.from_user.id
-    username = message.from_user.username or "None"
-    first_name = message.from_user.first_name
+    # Save new user to MongoDB
+    user_data = {
+        'user_id': message.from_user.id,
+        'username': message.from_user.username or 'None',
+        'firstname': message.from_user.first_name,
+    }
 
-    # Check if the user already exists in the database
-    if not users_collection.find_one({"user_id": user_id}):
-        users_collection.insert_one({"user_id": user_id, "username": username, "first_name": first_name})
+    # Check if the user is already in the database
+    if users_collection.count_documents({'user_id': message.from_user.id}) == 0:
+        users_collection.insert_one(user_data)
 
-        # Notify the admin about the new user
         await app.send_message(
             chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n"
-                 f"  ↫ ID: ❲ {user_id} ❳\n"
-                 f"  ↫ Username: ❲ @{username} ❳\n"
-                 f"  ↫ Firstname: ❲ {first_name} ❳"
+            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {users_collection.count_documents({})} ❳"
         )
 
-    # Language Selection Keyboard
     keyboard = [
         [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
-    await message.reply(
-        "🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
-        "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-        "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>",
-        reply_markup=types.InlineKeyboardMarkup(keyboard)
-    )
+    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
+            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
+
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
 async def language_selection(app: Client, callback_query: types.CallbackQuery):
-    # Extract language and user ID
     language = callback_query.data.split('_')[1]
-    user_id = callback_query.from_user.id
+    user_id = str(callback_query.from_user.id)
 
-    # Update the user's language in the database
-    users_collection.update_one({"user_id": user_id}, {"$set": {"language": language}}, upsert=True)
+    data = json.load(open('./data.json'))
+    data['languages'][user_id] = language
+    json.dump(data, open('./data.json', 'w'), indent=3)
 
-    # Check if FORCE_SUBSCRIBE is enabled
     if Config.FORCE_SUBSCRIBE:
-        # Generate join message and buttons
         join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
-        join_button = types.InlineKeyboardButton(
-            LANGUAGE_TEXTS[language]["join_channel_btn"],
-            url=f"https://t.me/{Config.CHANNLS[0]}"
-        )
-        verify_button = types.InlineKeyboardButton(
-            LANGUAGE_TEXTS[language]["verify_join"],
-            callback_data="check_join"
-        )
-        # Edit the message with join details
+        join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
+        verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
         await callback_query.message.edit(
             text=join_message,
             reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
         )
     else:
-        # Send welcome message if FORCE_SUBSCRIBE is disabled
         await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
+
+
+
 # Check Join Method
 async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
     states = ['administrator', 'creator', 'member', 'restricted']
