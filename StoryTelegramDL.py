@@ -4,6 +4,7 @@ import os
 import requests
 import json
 from pymongo import MongoClient
+from datetime import datetime
 
 # MongoDB Configuration
 MONGO_URL = "mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0"  # Replace with your MongoDB connection URL
@@ -13,6 +14,7 @@ DATABASE_NAME = "shah"     # Name of your database
 client = MongoClient(MONGO_URL)
 db = client[DATABASE_NAME]
 users_collection = db["users"]  # Collection for storing user information
+errors_collection = db["errors"]  # New collection for storing error logs
 
 # Bot Config Object
 class Config:
@@ -24,7 +26,7 @@ class Config:
     CHANNLS = ['Kali_Linux_BOTS']
     FORCE_SUBSCRIBE = True  # Default Force Subscribe Mode
 
-# Ensure required directories and files exisht
+# Ensure required directories and files exist
 if not os.path.exists('./.session'):
     os.mkdir('./.session')
 
@@ -39,6 +41,16 @@ app = Client(
     api_id=Config.API_ID,
     parse_mode=enums.ParseMode.DEFAULT
 )
+
+# Modified error handling to log to the database
+async def log_error_to_db(user_id, error_message):
+    error_data = {
+        "user_id": user_id,
+        "error_message": error_message,
+        "timestamp": datetime.utcnow()
+    }
+    # Insert the error data into the MongoDB collection
+    errors_collection.insert_one(error_data)
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
@@ -70,6 +82,7 @@ async def broadcast_message(app: Client, message: types.Message):
         except Exception as e:
             print(f"Failed to send message to {user_id}: {e}")
             fail_count += 1
+            await log_error_to_db(user_id, f"Broadcast failed: {e}")
             continue
 
         # Periodically update progress to the admin
@@ -78,6 +91,7 @@ async def broadcast_message(app: Client, message: types.Message):
 
     # Send a summary to the admin
     await message.reply(f"Broadcast completed.\nSuccess: {success_count}\nFailed: {fail_count}")
+
 
 # Language Texts (No changes here)
 LANGUAGE_TEXTS = {
