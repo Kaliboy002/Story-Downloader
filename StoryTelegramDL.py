@@ -42,8 +42,8 @@ app = Client(
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Load users from the data file# Fetch all users from MongoDB
-users = [user["user_id"] for user in users_collection.find()]
+    # Fetch all users from MongoDB
+    users = [user["user_id"] for user in users_collection.find()]
 
     if not users:
         await message.reply("No users available to broadcast.")
@@ -78,7 +78,6 @@ users = [user["user_id"] for user in users_collection.find()]
 
     # Send a summary to the admin
     await message.reply(f"Broadcast completed.\nSuccess: {success_count}\nFailed: {fail_count}")
-
 
 # Language Texts (No changes here)
 LANGUAGE_TEXTS = {
