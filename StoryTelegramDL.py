@@ -3,12 +3,13 @@ import asyncio
 import os
 import requests
 import json
-import pymongo
+from pymongo import MongoClient
 
-# MongoDB Connections
-client = pymongo.MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0")
-db = client.shah
-users_collection = db.users
+# MongoDB Connection
+client = MongoClient('mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0')  # Use your MongoDB URI here
+db = client['shah']  # Create a database
+users_collection = db['shm']  # Create a collection for users
+
 
 # Bot Config Object
 class Config:
@@ -20,9 +21,12 @@ class Config:
     CHANNLS = ['Kali_Linux_BOTS']
     FORCE_SUBSCRIBE = True  # Default Force Subscribe Mode
 
-# Ensure required directories and files exist
+# Ensure required directories and files exisht
 if not os.path.exists('./.session'):
     os.mkdir('./.session')
+
+if not os.path.exists('./data.json'):
+    json.dump({'users': [], 'languages': {}}, open('./data.json', 'w'), indent=3)
 
 # Initialize Pyrogram Client
 app = Client(
@@ -32,35 +36,6 @@ app = Client(
     api_id=Config.API_ID,
     parse_mode=enums.ParseMode.DEFAULT
 )
-# Language Texts (No changes here)
-# Language Texts (No changes here)
-LANGUAGE_TEXTS = {
-    "en": {
-        "welcome": "<b><i>Welcome to TG Story Downloader!</b></i> \n\n✈️ You can easily download telegram <b>stories and archived posts </b>of any user in high quality and speed⚡\n\n<b>⁀➴ Just simply send me the link of that story or archived post</b> 🖇️🙂",
-        "join_channel": "⚠️<b><i> To use this bot, you must first join our Telegram channel</i></b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
-        "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
-        "join_channel_btn": "Jᴏɪɴ ᴄʜᴀɴɴᴇʟ⚡️",
-        "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
-        "downloading": "<b>Downloading, please wait</b>...⏳🙃",
-        "download_successful": "<b>Download completed successfully</b> ✈️",
-        "error": "✗ Sorry, there was an issue while downloading 💔\nPlease check the link and try again ⚡"
-    },
-    "fa": {
-        "welcome": "<b>به ربات دانلود استوری تلگرام خوش آمدید!</b>\n\n✈️ شما می‌توانید به‌راحتی<b> استوری‌ها و پست‌های آرشیو شده </b>هر کاربری را با کیفیت و سرعت بالا دانلود کنید⚡\n\n<b>✦ کافیست لینک آن استوری یا پست آرشیو شده را برای من ارسال کنید 🖇️🙂</b>",
-        "join_channel": (
-            "<b>⚠️ برای استفاده از این ربات، نخست شما باید به کانال‌ های زیر عضو گردید</b>.\n\n"
-            "در غیر اینصورت این ربات برای شما کار نخواهد کرد. سپس روی دکمه | <b>عضـو شـدم 🔐 | </b>"
-            "کلیک کنید تا عضویت ربات خود را تأیید کنید."
-        ),
-        "verify_join": "عضـو شـدم 🔐",
-        "join_channel_btn": "عضـو کانال ⚡",
-        "not_joined": "🤨 شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
-        "downloading": "<b>در حال دانلود، لطفاً صبر کنید</b> ...⏳🙃",
-        "download_successful": "<b>دانلود با موفقیت انجام شد ✈️</b>",
-        "error": "✗ متاسفانه مشکلی در دانلود پیش آمد 💔\nلطفا لینک را بررسی و دوباره تلاش نماید⚡"
-    }
-}
-
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
@@ -101,6 +76,34 @@ async def broadcast_message(app: Client, message: types.Message):
     # Send a summary to the admin
     await message.reply(f"Broadcast completed.\nSuccess: {success_count}\nFailed: {fail_count}")
 
+# Language Texts (No changes here)
+LANGUAGE_TEXTS = {
+    "en": {
+        "welcome": "<b><i>Welcome to TG Story Downloader!</b></i> \n\n✈️ You can easily download telegram <b>stories and archived posts </b>of any user in high quality and speed⚡\n\n<b>⁀➴ Just simply send me the link of that story or archived post</b> 🖇️🙂",
+        "join_channel": "⚠️<b><i> To use this bot, you must first join our Telegram channel</i></b>\n\nAfter successfully joining, click the 🔐𝗝𝗼𝗶𝗻𝗲𝗱 button to confirm your bot membership and to continue",
+        "verify_join": "🔐𝗝𝗼𝗶𝗻𝗲𝗱",
+        "join_channel_btn": "Jᴏɪɴ ᴄʜᴀɴɴᴇʟ⚡️",
+        "not_joined": "🤨 You are not a member of our channel. Please join and try again.",
+        "downloading": "<b>Downloading, please wait</b>...⏳🙃",
+        "download_successful": "<b>Download completed successfully</b> ✈️",
+        "error": "✗ Sorry, there was an issue while downloading 💔\nPlease check the link and try again ⚡"
+    },
+    "fa": {
+        "welcome": "<b>به ربات دانلود استوری تلگرام خوش آمدید!</b>\n\n✈️ شما می‌توانید به‌راحتی<b> استوری‌ها و پست‌های آرشیو شده </b>هر کاربری را با کیفیت و سرعت بالا دانلود کنید⚡\n\n<b>✦ کافیست لینک آن استوری یا پست آرشیو شده را برای من ارسال کنید 🖇️🙂</b>",
+        "join_channel": (
+            "<b>⚠️ برای استفاده از این ربات، نخست شما باید به کانال‌ های زیر عضو گردید</b>.\n\n"
+            "در غیر اینصورت این ربات برای شما کار نخواهد کرد. سپس روی دکمه | <b>عضـو شـدم 🔐 | </b>"
+            "کلیک کنید تا عضویت ربات خود را تأیید کنید."
+        ),
+        "verify_join": "عضـو شـدم 🔐",
+        "join_channel_btn": "عضـو کانال ⚡",
+        "not_joined": "🤨 شما عضو کانال ما نیستید. لطفاً عضو شوید و دوباره امتحان کنید.",
+        "downloading": "<b>در حال دانلود، لطفاً صبر کنید</b> ...⏳🙃",
+        "download_successful": "<b>دانلود با موفقیت انجام شد ✈️</b>",
+        "error": "✗ متاسفانه مشکلی در دانلود پیش آمد 💔\nلطفا لینک را بررسی و دوباره تلاش نماید⚡"
+    }
+}
+
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
@@ -108,25 +111,27 @@ async def ON_START_BOT(app: Client, message: types.Message):
     user = users_collection.find_one({"user_id": user_id})
 
     if not user:
-        # Add user to MongoDB
+        # Insert new user into MongoDB
         users_collection.insert_one({
             "user_id": user_id,
             "username": message.from_user.username,
             "first_name": message.from_user.first_name
         })
 
-        # Notify the admin about the new user
+        # Notify admin about new user
         await app.send_message(
             chat_id=Config.SUDO,
             text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {user_id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {users_collection.count_documents({})} ❳"
         )
 
+    # Send language selection keyboard
     keyboard = [
         [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
     await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
-            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
+                        "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+                        "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", 
+                        reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
