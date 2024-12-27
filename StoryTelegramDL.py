@@ -58,6 +58,46 @@ LANGUAGE_TEXTS = {
     }
 }
 
+# On Start and Language Selection
+@app.on_message(filters.private & filters.regex('^/start$'))
+async def ON_START_BOT(app: Client, message: types.Message):
+    data = json.load(open('./data.json'))
+    if message.from_user.id not in data['users']:
+        data['users'].append(message.from_user.id)
+        json.dump(data, open('./data.json', 'w'), indent=3)
+        await app.send_message(
+            chat_id=Config.SUDO,
+            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
+        )
+
+    keyboard = [
+        [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
+    ]
+    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
+            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
+
+# Handle Language Selection
+@app.on_callback_query(filters.regex('^lang_'))
+async def language_selection(app: Client, callback_query: types.CallbackQuery):
+    language = callback_query.data.split('_')[1]
+    user_id = str(callback_query.from_user.id)
+
+    data = json.load(open('./data.json'))
+    data['languages'][user_id] = language
+    json.dump(data, open('./data.json', 'w'), indent=3)
+
+    if Config.FORCE_SUBSCRIBE:
+        join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
+        join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
+        verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
+        await callback_query.message.edit(
+            text=join_message,
+            reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
+        )
+    else:
+        await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
+
 # Check Join Method
 async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
     states = ['administrator', 'creator', 'member', 'restricted']
@@ -92,44 +132,6 @@ async def GET_STORES_DATA(chat_id: str, story_id: int):
     finally:
         await client.disconnect()
     return True, media, description
-
-# On Start and Language Selection
-@app.on_message(filters.private & filters.regex('^/start$'))
-async def ON_START_BOT(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    if message.from_user.id not in data['users']:
-        data['users'].append(message.from_user.id)
-        json.dump(data, open('./data.json', 'w'), indent=3)
-        await app.send_message(
-            chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
-        )
-
-    keyboard = [
-        [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
-    ]
-    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
-            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
-
-# Handle Language Selection
-@app.on_callback_query(filters.regex('^lang_'))
-async def language_selection(app: Client, callback_query: types.CallbackQuery):
-    language = callback_query.data.split('_')[1]
-    user_id = str(callback_query.from_user.id)
-
-    data = json.load(open('./data.json'))
-    data['languages'][user_id] = language
-    json.dump(data, open('./data.json', 'w'), indent=3)
-
-    join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
-    join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
-    verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
-
-    await callback_query.message.edit(
-        text=join_message,
-        reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
-    )
 
 # Verify Channel Join (Force Subscribe)
 @app.on_callback_query(filters.regex('^check_join$'))
