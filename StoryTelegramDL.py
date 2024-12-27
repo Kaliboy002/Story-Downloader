@@ -148,16 +148,16 @@ user_id = callback_query.from_user.id
 # Update the user's language in the database
 users_collection.update_one({"user_id": user_id}, {"$set": {"language": language}}, upsert=True)
 
-    if Config.FORCE_SUBSCRIBE:
-        join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
-        join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
-        verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
-        await callback_query.message.edit(
-            text=join_message,
-            reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
-        )
-    else:
-        await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
+if Config.FORCE_SUBSCRIBE:
+    join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
+    join_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["join_channel_btn"], url=f"https://t.me/{Config.CHANNLS[0]}")
+    verify_button = types.InlineKeyboardButton(LANGUAGE_TEXTS[language]["verify_join"], callback_data="check_join")
+    await callback_query.message.edit(
+        text=join_message,
+        reply_markup=types.InlineKeyboardMarkup([[join_button], [verify_button]])
+    )
+else:
+    await callback_query.message.edit(text=LANGUAGE_TEXTS[language]["welcome"])
 
 # Check Join Method
 async def CHECK_JOIN_MEMBER(user_id: int, channels: list, api_key: str):
