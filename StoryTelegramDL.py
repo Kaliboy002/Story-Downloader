@@ -3,6 +3,12 @@ import asyncio
 import os
 import requests
 import json
+import pymongo
+
+# MongoDB Connection
+client = pymongo.MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0")
+db = client.shah
+users_collection = db.users
 
 # Bot Config Object
 class Config:
@@ -14,12 +20,9 @@ class Config:
     CHANNLS = ['Kali_Linux_BOTS']
     FORCE_SUBSCRIBE = True  # Default Force Subscribe Mode
 
-# Ensure required directories and files exisht
+# Ensure required directories and files exist
 if not os.path.exists('./.session'):
     os.mkdir('./.session')
-
-if not os.path.exists('./data.json'):
-    json.dump({'users': [], 'languages': {}}, open('./data.json', 'w'), indent=3)
 
 # Initialize Pyrogram Client
 app = Client(
@@ -32,9 +35,8 @@ app = Client(
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Load users from the data file
-    data = json.load(open('./data.json'))
-    users = data.get("users", [])
+    # Load users from MongoDB
+    users = [user["user_id"] for user in users_collection.find()]
 
     if not users:
         await message.reply("No users available to broadcast.")
@@ -70,17 +72,24 @@ async def broadcast_message(app: Client, message: types.Message):
     # Send a summary to the admin
     await message.reply(f"Broadcast completed.\nSuccess: {success_count}\nFailed: {fail_count}")
 
-
 # On Start and Language Selection
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    if message.from_user.id not in data['users']:
-        data['users'].append(message.from_user.id)
-        json.dump(data, open('./data.json', 'w'), indent=3)
+    user_id = message.from_user.id
+    user = users_collection.find_one({"user_id": user_id})
+
+    if not user:
+        # Add user to MongoDB
+        users_collection.insert_one({
+            "user_id": user_id,
+            "username": message.from_user.username,
+            "first_name": message.from_user.first_name
+        })
+
+        # Notify the admin about the new user
         await app.send_message(
             chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
+            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {user_id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {users_collection.count_documents({})} ❳"
         )
 
     keyboard = [
@@ -90,7 +99,7 @@ async def ON_START_BOT(app: Client, message: types.Message):
             "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
             "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
 
-
+# Language Texts (No changes here)
 # Language Texts (No changes here)
 LANGUAGE_TEXTS = {
     "en": {
