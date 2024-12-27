@@ -1,16 +1,14 @@
 from pyrogram import Client, types, filters, enums
-import asyncio
-import os
-import requests
-import json
 from pymongo import MongoClient
+import os
+import json
 
-# MongoDB setup
-client = MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0")
+# MongoDB connection setup
+client = MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority")
 db = client['shah']
-users_collection = db['users']
+users_collection = db['users']  # Collection to store user data
 
-# Bot Config Objects
+# Bot Config Object
 class Config:
     SESSION = "BQG0lX0Aq1b5Qc5xhfgllDAKHB8GyOvj5bYEauDIAon_8wc4lH85gJRiat1YFysSLpZ7RjMuRnzALAmo-lJwxw03sWbZMO-6v8cyKhRVoT_H2mKukjxLYOudW7jW-7AK7Ca8B6QnnV9OqdHXjYVoWFjzJShp1ep3zpH9ldlRmUUgsYgpG8mlqPEQZ8VRDOnHbljXx23_yM3AzBArkRI0qAu0KO7vNnmuoZgkj8jUfRTDMEQyHRNNf0bNUshsfwVb1OU0w1fMRnji12R_Sp89GsgpCHe_tKcQfjieLKdxqxLVNByrNZOjAJee0dsR0DoMVAXnbYXLoYBYXWF7EtYhL-QXcYeBrgAAAAG6ViRWAA"
     API_KEY = "8179647576:AAE_rO4MOquGLoUUDvzWyzdHegqcpEajDl0"
@@ -20,12 +18,9 @@ class Config:
     CHANNLS = ['Kali_Linux_BOTS']
     FORCE_SUBSCRIBE = True  # Default Force Subscribe Mode
 
-# Ensure required directories and files exist
+# Ensure required directories exist
 if not os.path.exists('./.session'):
     os.mkdir('./.session')
-
-if not os.path.exists('./data.json'):
-    json.dump({'users': [], 'languages': {}}, open('./data.json', 'w'), indent=3)
 
 # Initialize Pyrogram Client
 app = Client(
@@ -38,9 +33,9 @@ app = Client(
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Get all user IDs from MongoDB
-    users = [user['user_id'] for user in users_collection.find()]
-
+    # Fetch users from MongoDB collection
+    users = list(users_collection.find({}))
+    
     if not users:
         await message.reply("No users available to broadcast.")
         return
@@ -52,7 +47,9 @@ async def broadcast_message(app: Client, message: types.Message):
     success_count, fail_count = 0, 0
 
     # Broadcast the message to each user
-    for index, user_id in enumerate(users):
+    for index, user in enumerate(users):
+        user_id = user['user_id']  # Assuming 'user_id' is the field storing user IDs
+
         try:
             if broadcast_content.text:
                 await app.send_message(chat_id=user_id, text=broadcast_content.text)
