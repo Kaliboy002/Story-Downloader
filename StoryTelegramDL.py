@@ -40,10 +40,10 @@ app = Client(
     parse_mode=enums.ParseMode.DEFAULT
 )
 
-@app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
+@app.on_message(filters.private & filters.user(Config.SUDO) & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Fetch all users from MongoDB
-    users = [user["user_id"] for user in users_collection.find()]
+    # Load users from MongoDB
+    users = [user['user_id'] for user in users_collection.find()]
 
     if not users:
         await message.reply("No users available to broadcast.")
@@ -56,7 +56,7 @@ async def broadcast_message(app: Client, message: types.Message):
     success_count, fail_count = 0, 0
 
     # Broadcast the message to each user
-    for index, user_id in enumerate(users):
+    for user_id in users:
         try:
             if broadcast_content.text:
                 await app.send_message(chat_id=user_id, text=broadcast_content.text)
