@@ -14,7 +14,7 @@ class Config:
     CHANNLS = ['Kali_Linux_BOTS']
     FORCE_SUBSCRIBE = True  # Default Force Subscribe Mode
 
-# Ensure required directories and files exist
+# Ensure required directories and files exisht
 if not os.path.exists('./.session'):
     os.mkdir('./.session')
 
