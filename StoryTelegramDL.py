@@ -5,7 +5,7 @@ import requests
 import json
 import pymongo
 
-# MongoDB Connection
+# MongoDB Connections
 client = pymongo.MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0")
 db = client.shah
 users_collection = db.users
