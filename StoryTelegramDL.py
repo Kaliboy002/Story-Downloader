@@ -3,6 +3,16 @@ import asyncio
 import os
 import requests
 import json
+from pymongo import MongoClient
+
+# MongoDB Configuration
+MONGO_URL = "mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority&appName=Cluster0"  # Replace with your MongoDB connection URL
+DATABASE_NAME = "shah"     # Name of your database
+
+# Initialize MongoDB Client
+client = MongoClient(MONGO_URL)
+db = client[DATABASE_NAME]
+users_collection = db["users"]  # Collection for storing user information
 
 # Bot Config Object
 class Config:
@@ -32,9 +42,8 @@ app = Client(
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Load users from the data file
-    data = json.load(open('./data.json'))
-    users = data.get("users", [])
+    # Load users from the data file# Fetch all users from MongoDB
+users = [user["user_id"] for user in users_collection.find()]
 
     if not users:
         await message.reply("No users available to broadcast.")
@@ -99,34 +108,46 @@ LANGUAGE_TEXTS = {
     }
 }
 
-# On Start and Language Selection
+#start
 @app.on_message(filters.private & filters.regex('^/start$'))
 async def ON_START_BOT(app: Client, message: types.Message):
-    data = json.load(open('./data.json'))
-    if message.from_user.id not in data['users']:
-        data['users'].append(message.from_user.id)
-        json.dump(data, open('./data.json', 'w'), indent=3)
+    user_id = message.from_user.id
+    username = message.from_user.username or "None"
+    first_name = message.from_user.first_name
+
+    # Check if the user already exists in the database
+    if not users_collection.find_one({"user_id": user_id}):
+        users_collection.insert_one({"user_id": user_id, "username": username, "first_name": first_name})
+
+        # Notify the admin about the new user
         await app.send_message(
             chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
+            text=f"↫︙New User Joined The Bot.\n\n"
+                 f"  ↫ ID: ❲ {user_id} ❳\n"
+                 f"  ↫ Username: ❲ @{username} ❳\n"
+                 f"  ↫ Firstname: ❲ {first_name} ❳"
         )
 
+    # Language Selection Keyboard
     keyboard = [
         [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
     ]
-    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
-            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
-
+    await message.reply(
+        "🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
+        "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+        "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>",
+        reply_markup=types.InlineKeyboardMarkup(keyboard)
+    )
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
 async def language_selection(app: Client, callback_query: types.CallbackQuery):
     language = callback_query.data.split('_')[1]
     user_id = str(callback_query.from_user.id)
 
-    data = json.load(open('./data.json'))
-    data['languages'][user_id] = language
-    json.dump(data, open('./data.json', 'w'), indent=3)
+user_id = callback_query.from_user.id
+
+# Update the user's language in the database
+users_collection.update_one({"user_id": user_id}, {"$set": {"language": language}}, upsert=True)
 
     if Config.FORCE_SUBSCRIBE:
         join_message = LANGUAGE_TEXTS[language]["join_channel"].format(Config.CHANNLS[0])
