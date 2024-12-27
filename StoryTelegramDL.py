@@ -1,12 +1,8 @@
 from pyrogram import Client, types, filters, enums
-from pymongo import MongoClient
+import asyncio
 import os
+import requests
 import json
-
-# MongoDB connection setup
-client = MongoClient("mongodb+srv://mrshokrullah:L7yjtsOjHzGBhaSR@cluster0.aqxyz.mongodb.net/shah?retryWrites=true&w=majority")
-db = client['shah']
-users_collection = db['users']  # Collection to store user data
 
 # Bot Config Object
 class Config:
@@ -18,9 +14,12 @@ class Config:
     CHANNLS = ['Kali_Linux_BOTS']
     FORCE_SUBSCRIBE = True  # Default Force Subscribe Mode
 
-# Ensure required directories exist
+# Ensure required directories and files exisht
 if not os.path.exists('./.session'):
     os.mkdir('./.session')
+
+if not os.path.exists('./data.json'):
+    json.dump({'users': [], 'languages': {}}, open('./data.json', 'w'), indent=3)
 
 # Initialize Pyrogram Client
 app = Client(
@@ -33,9 +32,10 @@ app = Client(
 
 @app.on_message(filters.private & filters.user(Config.SUDO) & filters.reply & filters.command("broadcast"))
 async def broadcast_message(app: Client, message: types.Message):
-    # Fetch users from MongoDB collection
-    users = list(users_collection.find({}))
-    
+    # Load users from the data file
+    data = json.load(open('./data.json'))
+    users = data.get("users", [])
+
     if not users:
         await message.reply("No users available to broadcast.")
         return
@@ -47,9 +47,7 @@ async def broadcast_message(app: Client, message: types.Message):
     success_count, fail_count = 0, 0
 
     # Broadcast the message to each user
-    for index, user in enumerate(users):
-        user_id = user['user_id']  # Assuming 'user_id' is the field storing user IDs
-
+    for index, user_id in enumerate(users):
         try:
             if broadcast_content.text:
                 await app.send_message(chat_id=user_id, text=broadcast_content.text)
@@ -71,6 +69,27 @@ async def broadcast_message(app: Client, message: types.Message):
 
     # Send a summary to the admin
     await message.reply(f"Broadcast completed.\nSuccess: {success_count}\nFailed: {fail_count}")
+
+
+# On Start and Language Selection
+@app.on_message(filters.private & filters.regex('^/start$'))
+async def ON_START_BOT(app: Client, message: types.Message):
+    data = json.load(open('./data.json'))
+    if message.from_user.id not in data['users']:
+        data['users'].append(message.from_user.id)
+        json.dump(data, open('./data.json', 'w'), indent=3)
+        await app.send_message(
+            chat_id=Config.SUDO,
+            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {len(data['users'])} ❳"
+        )
+
+    keyboard = [
+        [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
+    ]
+    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
+            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
+            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
+
 
 # Language Texts (No changes here)
 LANGUAGE_TEXTS = {
@@ -100,31 +119,6 @@ LANGUAGE_TEXTS = {
     }
 }
 
-
-# On Start and Language Selection
-@app.on_message(filters.private & filters.regex('^/start$'))
-async def ON_START_BOT(app: Client, message: types.Message):
-    # Check if user already exists in the database
-    existing_user = users_collection.find_one({'user_id': message.from_user.id})
-    
-    if not existing_user:
-        # Add user to MongoDB
-        users_collection.insert_one({
-            'user_id': message.from_user.id,
-            'username': message.from_user.username or 'None',
-            'first_name': message.from_user.first_name or 'None'
-        })
-        await app.send_message(
-            chat_id=Config.SUDO,
-            text=f"↫︙New User Joined The Bot.\n\n  ↫ ID: ❲ {message.from_user.id} ❳\n  ↫ Username: ❲ @{message.from_user.username or 'None'} ❳\n  ↫ Firstname: ❲ {message.from_user.first_name} ❳\n\n↫︙Total Members: ❲ {users_collection.count_documents({})} ❳"
-        )
-
-    keyboard = [
-        [types.InlineKeyboardButton("فارسـی 🇮🇷", callback_data="lang_fa"), types.InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")]
-    ]
-    await message.reply("🇺🇸 <b>Select the language of your preference from below to continue</b>\n"
-            "┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈\n"
-            "🇮🇷 <b>برای ادامه، لطفا نخست زبان مورد نظر خود را از گزینه زیر انتخاب کنید</b>", reply_markup=types.InlineKeyboardMarkup(keyboard))
 
 # Handle Language Selection
 @app.on_callback_query(filters.regex('^lang_'))
