@@ -1,89 +1,39 @@
-import os
-import requests
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+import requests
 
-# Bot token and Segmind API configuration
-TELEGRAM_BOT_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
-SEGMIND_API_KEY = 'SG_6dad4e63584a9ea1'
-SEGMIND_API_URL = 'https://api.segmind.com/v2/faceswap'
+# Your API key for face swap service
+API_KEY = 'SG_6dad4e63584a9ea1'
 
-
-async def start(update: Update, context: CallbackContext):
-    """Sends a welcome message when the bot is started."""
-    await update.message.reply_text(
-        "Welcome to the Face Swap Bot! Send me two photos in the same message to swap faces."
+# Function to handle photo messages
+async def handle_images(update: Update, context):
+    photo_file = await update.message.photo[-1].get_file()
+    photo_url = photo_file.file_path
+    response = requests.post(
+        'https://api.segmind.com/v1/face-swap',
+        headers={'Authorization': f'Bearer {API_KEY}'},
+        files={'image': requests.get(photo_url).content},
     )
-
-
-async def handle_images(update: Update, context: CallbackContext):
-    """Handles the face swapping process when the user sends two photos."""
-    photos = update.message.photo
-    if len(photos) < 2:
-        await update.message.reply_text(
-            "Please send exactly two photos in one message to perform the face swap."
-        )
-        return
-
-    try:
-        # Download the photos
-        photo1_path = await context.bot.get_file(photos[0].file_id).download_to_drive('photo1.jpg')
-        photo2_path = await context.bot.get_file(photos[1].file_id).download_to_drive('photo2.jpg')
-
-        # Call the Segmind API for face swapping
-        response = requests.post(
-            SEGMIND_API_URL,
-            headers={'Authorization': f'Bearer {SEGMIND_API_KEY}'},
-            files={
-                'source1': open(photo1_path, 'rb'),
-                'source2': open(photo2_path, 'rb'),
-            }
-        )
-
-        # Handle API response
-        if response.status_code == 200:
-            result = response.json()
-            if "output_url" in result:
-                # Download the swapped face image
-                output_image = requests.get(result["output_url"]).content
-                with open('output.jpg', 'wb') as f:
-                    f.write(output_image)
-
-                # Send the swapped image back to the user
-                with open('output.jpg', 'rb') as f:
-                    await update.message.reply_photo(photo=f)
-            else:
-                error_message = result.get("error", "Unknown error occurred.")
-                await update.message.reply_text(f"API Error: {error_message}")
-        else:
-            await update.message.reply_text(
-                f"Face swap failed! API returned status code {response.status_code}."
-            )
-    except Exception as e:
-        await update.message.reply_text(f"An error occurred: {str(e)}")
-    finally:
-        # Clean up temporary files
-        if os.path.exists('photo1.jpg'):
-            os.remove('photo1.jpg')
-        if os.path.exists('photo2.jpg'):
-            os.remove('photo2.jpg')
-        if os.path.exists('output.jpg'):
-            os.remove('output.jpg')
-
+    if response.status_code == 200:
+        with open("swapped_face.jpg", "wb") as f:
+            f.write(response.content)
+        await update.message.reply_photo(photo=open("swapped_face.jpg", 'rb'))
+    else:
+        await update.message.reply_text("Error with face swap API.")
 
 async def main():
-    """Main function to start the bot."""
-    # Create the application
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    # Replace 'YOUR_BOT_TOKEN' with your actual bot token
+    application = Application.builder().token('8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ').build()
 
-    # Add command and message handlers
-    application.add_handler(CommandHandler("start", start))
+    # Add a message handler for photos
     application.add_handler(MessageHandler(filters.PHOTO, handle_images))
 
-    # Start the bot
+    # Run the bot without using asyncio.run() directly
     await application.run_polling()
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     import asyncio
-    asyncio.run(main())
+    # Use the existing event loop, do not call asyncio.run() directly.
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())  # Create the task
+    loop.run_forever()  # Keep the event loop running
