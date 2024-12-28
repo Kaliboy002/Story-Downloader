@@ -1,7 +1,2 @@
-asyncio
-pyrofork
-pyrogram==2.0.106
-tgcrypto==1.2.3
+python-telegram-bot==20.5
 requests==2.31.0
-tqdm
-pymongo
