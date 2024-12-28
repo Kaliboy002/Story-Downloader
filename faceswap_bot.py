@@ -1,8 +1,7 @@
 import os
 import requests
-import telegram
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext, filters
 
 # Bot token and Segmind API configuration
 TELEGRAM_BOT_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
@@ -79,7 +78,7 @@ async def main():
 
     # Add command and message handlers
     application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(telegram.filters.PHOTO, handle_images))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_images))
 
     # Start the bot
     await application.run_polling()
