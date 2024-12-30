@@ -1,7 +1,7 @@
 import logging
 import requests
-from telegram import Update, InputMediaPhoto
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram import Update, InputMediaPhoto, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 from io import BytesIO
 
 # Replace with your Telegram Bot API token and SegMind API key
@@ -71,7 +71,7 @@ def main() -> None:
 
     # Add command and message handlers
     dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.photo, handle_photo))
+    dp.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
     # Log errors
     dp.add_error_handler(error)
