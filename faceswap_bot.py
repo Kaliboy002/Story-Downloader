@@ -6,7 +6,7 @@ import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
-# Deep-Image.ai API key
+# Deep-Image.ai API kyey
 API_KEY = "21dcba40-c6c7-11ef-a77c-bf148b3dcb18"
 
 # Define headers for the API requests
