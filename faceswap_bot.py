@@ -1,7 +1,6 @@
-import os
-import requests
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext
+from telegram.ext.filters import PhotoFilter  # Correct import for filters
 
 SLAZZER_API_KEY = '41a14566beef4577b14bba3ac475227c'  # Replace with your Slazzer API key
 TELEGRAM_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'  # Replace with your Telegram bot token
@@ -28,7 +27,7 @@ def remove_background(image_path: str) -> str:
 def handle_photo(update: Update, context: CallbackContext):
     file = update.message.photo[-1].get_file()
     file.download('received_image.jpg')
-
+    
     # Call Slazzer API to remove background
     output_image_path = remove_background('received_image.jpg')
 
@@ -38,14 +37,12 @@ def handle_photo(update: Update, context: CallbackContext):
         update.message.reply_text('Sorry, I couldn\'t process the image.')
 
 def main():
-    updater = Updater(TELEGRAM_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
+    application = Application.builder().token(TELEGRAM_TOKEN).build()
 
-    dispatcher.add_handler(CommandHandler('start', start))
-    dispatcher.add_handler(MessageHandler(Filters.photo, handle_photo))
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(MessageHandler(PhotoFilter(), handle_photo))
 
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()
 
 if __name__ == '__main__':
     main()
