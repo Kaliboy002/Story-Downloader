@@ -2,7 +2,7 @@ import os
 import requests
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram import ParseMode
+from telegram.constants import ParseMode  # Updated import
 
 # Your Remove.bg API key
 REMOVE_BG_API_KEY = "DjJxJpLtmBcvaU2FoR2PfcxN"
