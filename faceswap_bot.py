@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ParseMode  # Updated import
 
-# Your Remove.bg API key
+# Your Remove.bg API khey
 REMOVE_BG_API_KEY = "DjJxJpLtmBcvaU2FoR2PfcxN"
 
 # Function to remove background using Remove.bg API
