@@ -4,7 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 
 # Replace with your Pixo API key
-PIX_API_KEY = '2zo8cdjibyg0'
+PIX_API_KEY = '3jdmo70kui40'
 # Replace with your Telegram Bot token
 TELEGRAM_BOT_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
 
