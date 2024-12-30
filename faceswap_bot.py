@@ -1,7 +1,7 @@
 import logging
 import requests
-from telegram import Update, InputMediaPhoto, filters
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
+from telegram import Update, InputMediaPhoto
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, filters
 from io import BytesIO
 
 # Replace with your Telegram Bot API token and SegMind API key
