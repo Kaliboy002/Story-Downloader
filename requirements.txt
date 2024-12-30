@@ -1,2 +1,2 @@
-python-telegram-bot
-opencv-python
+python-telegram-bot==20.3
+requests==2.31.0
