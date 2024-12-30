@@ -1,48 +1,69 @@
+import logging
+import requests
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, CallbackContext
-from telegram.ext.filters import PhotoFilter  # Correct import for filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-SLAZZER_API_KEY = '41a14566beef4577b14bba3ac475227c'  # Replace with your Slazzer API key
-TELEGRAM_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'  # Replace with your Telegram bot token
+# Replace with your Telegram Bot API token from BotFather
+TELEGRAM_API_KEY = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text('Send me an image to remove the background.')
+# Replace with your RapidAPI key
+RAPIDAPI_KEY = 'f80d19213msh481 ef01 a986fc9fp19765djsn5d3ac8b3360f'
 
-def remove_background(image_path: str) -> str:
-    url = "https://api.slazzer.com/v2/remove-background"
+# Initialize the Telegram Bot
+updater = Updater(TELEGRAM_API_KEY, use_context=True)
+dispatcher = updater.dispatcher
+
+# Enable logging to help with debugging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Function to download video from Social Media Video Downloader API
+def download_video(url: str):
+    api_url = f"https://social-media-video-downloader.p.rapidapi.com/smvd/get/youtube?url={url}"
     headers = {
-        "Authorization": f"Bearer {SLAZZER_API_KEY}",
+        'x-rapidapi-key': RAPIDAPI_KEY,
+        'x-rapidapi-host': 'social-media-video-downloader.p.rapidapi.com'
     }
-    with open(image_path, 'rb') as image_file:
-        files = {"image": image_file}
-        response = requests.post(url, headers=headers, files=files)
-    if response.status_code == 200:
-        # Save the resulting image
-        output_path = 'output.png'
-        with open(output_path, 'wb') as f:
-            f.write(response.content)
-        return output_path
-    return None
-
-def handle_photo(update: Update, context: CallbackContext):
-    file = update.message.photo[-1].get_file()
-    file.download('received_image.jpg')
     
-    # Call Slazzer API to remove background
-    output_image_path = remove_background('received_image.jpg')
-
-    if output_image_path:
-        update.message.reply_photo(photo=open(output_image_path, 'rb'))
+    response = requests.get(api_url, headers=headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        if 'video_url' in data:
+            return data['video_url']
+        else:
+            return "Sorry, I couldn't find a video at that URL."
     else:
-        update.message.reply_text('Sorry, I couldn\'t process the image.')
+        return "Error: Unable to fetch video. Please try again later."
 
+# Command handler to start the bot
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Welcome! Send me a YouTube video link, and I'll give you the download link.")
+
+# Function to handle incoming messages and download videos
+def handle_message(update: Update, context: CallbackContext) -> None:
+    text = update.message.text
+    if "youtube.com" in text or "youtu.be" in text:
+        update.message.reply_text("Downloading video... Please wait a moment.")
+        video_url = download_video(text)
+        update.message.reply_text(f"Here is your video download link: {video_url}")
+    else:
+        update.message.reply_text("Please send a valid YouTube link.")
+
+# Error handler for the bot
+def error(update: Update, context: CallbackContext):
+    logger.warning(f"Update {update} caused error {context.error}")
+
+# Main function to start the bot
 def main():
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    # Handlers
+    dispatcher.add_handler(CommandHandler("start", start))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
-    application.add_handler(CommandHandler('start', start))
-    application.add_handler(MessageHandler(PhotoFilter(), handle_photo))
-
-    application.run_polling()
+    # Start the bot
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == '__main__':
     main()
