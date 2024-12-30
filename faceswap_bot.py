@@ -23,13 +23,17 @@ async def face_swap(update: Update, context: CallbackContext):
         await update.message.reply_text("Please send two images: one for the target face and one for the face to swap.")
         return
 
-    # Save the images sent by the user
+    # Fetch the file objects from Telegram
     target_image_file = await update.message.photo[-2].get_file()
     swap_image_file = await update.message.photo[-1].get_file()
+
+    # Define file paths
     target_image_path = "target_image.jpg"
     swap_image_path = "swap_image.jpg"
-    target_image_file.download(target_image_path)
-    swap_image_file.download(swap_image_path)
+
+    # Download the images to the local server
+    await target_image_file.download_to_drive(target_image_path)
+    await swap_image_file.download_to_drive(swap_image_path)
 
     # Prepare the API request to create the face swap job
     headers = {
