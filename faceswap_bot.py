@@ -1,68 +1,84 @@
-import os
+import logging
 import requests
-from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from telegram.constants import ParseMode  # Updated import
+from telegram import Update, InputMediaPhoto
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from io import BytesIO
 
-# Your Remove.bg API khey
-REMOVE_BG_API_KEY = "DjJxJpLtmBcvaU2FoR2PfcxN"
+# Replace with your Telegram Bot API token and SegMind API key
+TELEGRAM_API_KEY = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
+SEGMIND_API_KEY = 'SG_d8d1ccf061609472'  # Your SegMind API Key for segmentation
 
-# Function to remove background using Remove.bg API
-def remove_bg(image_path):
-    url = "https://api.remove.bg/v1.0/removebg"
-    headers = {'X-Api-Key': REMOVE_BG_API_KEY}
+# Set up logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    with open(image_path, 'rb') as image_file:
-        files = {'image_file': image_file}
-        data = {'size': 'auto'}  # Optional, specify the size of the image
-        response = requests.post(url, headers=headers, files=files, data=data)
+# Start command handler
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Hello! Send me a photo, and I'll perform a face swap for you!")
+
+# Handle photo messages (used for face swap processing)
+def handle_photo(update: Update, context: CallbackContext) -> None:
+    # Get the photo sent by the user
+    photo = update.message.photo[-1].get_file()
+    file_path = photo.download()
+
+    # Send a message to let the user know the processing is ongoing
+    update.message.reply_text("Processing the image...")
+
+    # Perform face swapping and segmentation (Assuming external face swap API)
+    result_image = perform_face_swap(file_path)
+
+    if result_image:
+        # Send the swapped face image back to the user
+        update.message.reply_photo(photo=BytesIO(result_image), caption="Here's your swapped face!")
+    else:
+        update.message.reply_text("Sorry, there was an issue with processing the image.")
+
+# Face swap function (to be implemented using your desired face swap API)
+def perform_face_swap(image_path: str) -> BytesIO:
+    """
+    This function will handle face swap using an external face swap API.
+    Currently, it is a placeholder. Replace this with your actual face swap logic.
+    """
+
+    # Example of a generic request to a face swap API (adjust with the real API you're using)
+    face_swap_api_url = "https://api.yourfaceswapapi.com/swap"
+    headers = {
+        'Authorization': f'Bearer {SEGMIND_API_KEY}',  # Replace with your actual API key
+    }
+
+    # Send image for face swapping
+    files = {'image': open(image_path, 'rb')}
+    response = requests.post(face_swap_api_url, headers=headers, files=files)
 
     if response.status_code == 200:
-        output_path = f"no_bg_{os.path.basename(image_path)}"
-        with open(output_path, 'wb') as out_file:
-            out_file.write(response.content)
-        return output_path
+        # Assuming the response returns the swapped image as bytes (adjust as needed)
+        image_bytes = response.content
+        return BytesIO(image_bytes)
     else:
-        print(f"Error: {response.status_code}, {response.text}")
+        logger.error("Face swap failed: %s", response.text)
         return None
 
-# Function to handle received photos
-async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # Get the photo file from the user
-    photo_file = await update.message.photo[-1].get_file()
-    photo_path = "user_image.jpg"
-    await photo_file.download_to_drive(photo_path)
+# Error handling
+def error(update: Update, context: CallbackContext) -> None:
+    logger.warning('Update "%s" caused error "%s"', update, context.error)
 
-    # Remove background from the photo
-    enhanced_photo_path = remove_bg(photo_path)
+# Main function to set up the bot
+def main() -> None:
+    updater = Updater(TELEGRAM_API_KEY, use_context=True)
+    dp = updater.dispatcher
 
-    if enhanced_photo_path:
-        # Send the enhanced photo back to the user
-        await context.bot.send_photo(chat_id=update.message.chat_id, photo=open(enhanced_photo_path, 'rb'))
-    else:
-        await update.message.reply_text("Sorry, I couldn't remove the background. Please try again later.")
+    # Add command and message handlers
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.photo, handle_photo))
 
-# Function to handle the /start command
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Welcome! Send me a photo, and I'll remove its background for you!\n"
-        "The background removal is powered by Remove.bg API."
-    )
+    # Log errors
+    dp.add_error_handler(error)
 
-# Main function to run the bot
-def main():
-    # Replace with your Telegram bot token
-    TELEGRAM_BOT_TOKEN = "8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ"
+    # Start the bot
+    updater.start_polling()
+    updater.idle()
 
-    # Create the Application instance
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-
-    # Add handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
-
-    # Run the bot
-    application.run_polling()
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
