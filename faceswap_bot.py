@@ -1,66 +1,51 @@
 import os
 import requests
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-# Replace with your Pixo API key
-PIX_API_KEY = '3jdmo70kui40'
-# Replace with your Telegram Bot token
-TELEGRAM_BOT_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
+SLAZZER_API_KEY = '41a14566beef4577b14bba3ac475227c'  # Replace with your Slazzer API key
+TELEGRAM_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'  # Replace with your Telegram bot token
 
-# Pixo API endpoint
-PIX_API_URL = 'https://pixoeditor.com/api/image'
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text('Send me an image to remove the background.')
 
-# Command handler to start the bot
-async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text("Welcome! Please send an image to edit.")
+def remove_background(image_path: str) -> str:
+    url = "https://api.slazzer.com/v2/remove-background"
+    headers = {
+        "Authorization": f"Bearer {SLAZZER_API_KEY}",
+    }
+    with open(image_path, 'rb') as image_file:
+        files = {"image": image_file}
+        response = requests.post(url, headers=headers, files=files)
+    if response.status_code == 200:
+        # Save the resulting image
+        output_path = 'output.png'
+        with open(output_path, 'wb') as f:
+            f.write(response.content)
+        return output_path
+    return None
 
-# Function to handle image editing
-async def handle_image(update: Update, context: CallbackContext):
-    # Get the image file from the user's message
-    if update.message.photo:
-        # Download the image
-        photo = update.message.photo[-1]
-        file = await photo.get_file()
-        image_path = 'user_image.jpg'
-        await file.download(image_path)
+def handle_photo(update: Update, context: CallbackContext):
+    file = update.message.photo[-1].get_file()
+    file.download('received_image.jpg')
 
-        # Prepare the image for editing
-        with open(image_path, 'rb') as image_file:
-            files = {'image': image_file}
-            data = {
-                'apikey': PIX_API_KEY,
-                'filter': 'Sepia',  # Example filter; adjust as needed
-                # Add other parameters as needed
-            }
+    # Call Slazzer API to remove background
+    output_image_path = remove_background('received_image.jpg')
 
-            # Send the image to Pixo API for editing
-            response = requests.post(PIX_API_URL, files=files, data=data)
-
-            if response.status_code == 200:
-                # Save the edited image
-                with open('edited_image.jpg', 'wb') as edited_image:
-                    edited_image.write(response.content)
-
-                # Send the edited image back to the user
-                with open('edited_image.jpg', 'rb') as edited_image:
-                    await update.message.reply_photo(photo=edited_image)
-            else:
-                await update.message.reply_text("An error occurred while processing your image.")
+    if output_image_path:
+        update.message.reply_photo(photo=open(output_image_path, 'rb'))
     else:
-        await update.message.reply_text("Please send an image to edit.")
+        update.message.reply_text('Sorry, I couldn\'t process the image.')
 
-# Main function to run the bot
 def main():
-    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    updater = Updater(TELEGRAM_TOKEN, use_context=True)
+    dispatcher = updater.dispatcher
 
-    # Command to start the bot
-    application.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(CommandHandler('start', start))
+    dispatcher.add_handler(MessageHandler(Filters.photo, handle_photo))
 
-    # Handle images sent to the bot
-    application.add_handler(MessageHandler(filters.PHOTO, handle_image))
-
-    application.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == '__main__':
     main()
