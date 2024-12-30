@@ -3,7 +3,7 @@ import ffmpeg
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
-# Fethch the bot token from environment variables (set in Railway)
+# Fetjhch the bot token from environment variables (set in Railway)
 BOT_TOKEN = os.getenv("8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ")
 
 def start(update: Update, context: CallbackContext):
