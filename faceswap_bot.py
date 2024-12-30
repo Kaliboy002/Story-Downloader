@@ -4,7 +4,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 import requests
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # Deep-Image.ai API key
 API_KEY = "21dcba40-c6c7-11ef-a77c-bf148b3dcb18"
@@ -59,40 +59,39 @@ def enhance_image(image_path):
     return None
 
 # Function to handle received photos
-def handle_photo(update: Update, context):
+async def handle_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # Get the photo file from the user
-    photo_file = update.message.photo[-1].get_file()
+    photo_file = await update.message.photo[-1].get_file()
     photo_path = "user_image.jpg"
-    photo_file.download(photo_path)
+    await photo_file.download_to_drive(photo_path)
 
     # Enhance the photo
     enhanced_photo_path = enhance_image(photo_path)
 
     if enhanced_photo_path:
         # Send the enhanced photo back to the user
-        context.bot.send_photo(chat_id=update.message.chat_id, photo=open(enhanced_photo_path, 'rb'))
+        await context.bot.send_photo(chat_id=update.message.chat_id, photo=open(enhanced_photo_path, 'rb'))
     else:
-        update.message.reply_text("Sorry, I couldn't enhance your photo. Please try again later.")
+        await update.message.reply_text("Sorry, I couldn't enhance your photo. Please try again later.")
 
 # Function to handle the /start command
-def start(update: Update, context):
-    update.message.reply_text("Welcome! Send me a photo, and I'll enhance it for you!")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Welcome! Send me a photo, and I'll enhance it for you!")
 
 # Main function to run the bot
 def main():
     # Replace with your Telegram bot token
     TELEGRAM_BOT_TOKEN = "8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ"
 
-    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+    # Create the Application instance
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
     # Add handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(MessageHandler(Filters.photo, handle_photo))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(MessageHandler(filters.PHOTO, handle_photo))
 
-    # Start the bot
-    updater.start_polling()
-    updater.idle()
+    # Run the bot
+    application.run_polling()
 
 if __name__ == "__main__":
     main()
