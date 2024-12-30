@@ -1,100 +1,98 @@
-import logging
-import cv2
-import numpy as np
+import time
+import json
+from pathlib import Path
+from urllib.request import urlretrieve
+import requests
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
-from io import BytesIO
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-# Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Deep-Image.ai API key
+API_KEY = "21dcba40-c6c7-11ef-a77c-bf148b3dcb18"
 
-# Function to handle /start command
-async def start(update: Update, context):
-    await update.message.reply_text('Welcome! Send me two pictures, and I will swap their faces.')
+# Define headers for the API requests
+HEADERS = {
+    'x-api-key': API_KEY,
+}
 
-# Function to swap faces using OpenCV
-def swap_faces(image1, image2):
-    # Convert images to gray scale
-    gray1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY)
-    gray2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY)
+# Define the enhancements and width for image processing
+ENHANCEMENTS = {
+    "enhancements": ["denoise", "deblur", "light"],
+    "width": 2000  # Desired width for upscaling
+}
 
-    # Use OpenCV's face detector
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    
-    # Detect faces in both images
-    faces1 = face_cascade.detectMultiScale(gray1, 1.1, 4)
-    faces2 = face_cascade.detectMultiScale(gray2, 1.1, 4)
-
-    if len(faces1) == 0 or len(faces2) == 0:
-        raise Exception("No faces detected in one or both images!")
-
-    # Extract faces
-    x1, y1, w1, h1 = faces1[0]
-    face1 = image1[y1:y1+h1, x1:x1+w1]
-    x2, y2, w2, h2 = faces2[0]
-    face2 = image2[y2:y2+h2, x2:x2+w2]
-
-    # Resize faces to swap
-    face1_resized = cv2.resize(face1, (w2, h2))
-    face2_resized = cv2.resize(face2, (w1, h1))
-
-    # Swap faces
-    image1[y1:y1+h1, x1:x1+w1] = face2_resized
-    image2[y2:y2+h2, x2:x2+w2] = face1_resized
-
-    return image1, image2
-
-# Function to handle images
-async def handle_images(update: Update, context):
-    photos = update.message.photo
-    if len(photos) < 2:
-        await update.message.reply_text('Please send at least two photos to swap faces.')
-        return
-
-    # Download the first two images
-    photo_1 = await photos[-2].get_file()
-    photo_2 = await photos[-1].get_file()
-
-    # Fetch the image data
-    image_1_data = BytesIO(await photo_1.download_as_bytearray())
-    image_2_data = BytesIO(await photo_2.download_as_bytearray())
-
-    # Convert byte data to OpenCV images
-    image_1 = cv2.imdecode(np.frombuffer(image_1_data.getvalue(), np.uint8), cv2.IMREAD_COLOR)
-    image_2 = cv2.imdecode(np.frombuffer(image_2_data.getvalue(), np.uint8), cv2.IMREAD_COLOR)
-
+# Function to enhance an image using Deep-Image.ai
+def enhance_image(image_path):
     try:
-        swapped_image_1, swapped_image_2 = swap_faces(image_1, image_2)
+        with open(image_path, 'rb') as f:
+            # Prepare the API request
+            response = requests.post(
+                'https://deep-image.ai/rest_api/process_result',
+                headers=HEADERS,
+                files={'image': f},
+                data={"parameters": json.dumps(ENHANCEMENTS)}
+            )
 
-        # Convert images back to byte format
-        _, buffer_1 = cv2.imencode('.jpg', swapped_image_1)
-        _, buffer_2 = cv2.imencode('.jpg', swapped_image_2)
+            # Check if the request was successful
+            if response.status_code == 200:
+                response_json = response.json()
+                # Wait for processing to complete
+                while response_json.get('status') == 'in_progress':
+                    time.sleep(1)
+                    response = requests.get(
+                        f'https://deep-image.ai/rest_api/result/{response_json["job"]}',
+                        headers=HEADERS
+                    )
+                    response_json = response.json()
 
-        # Send the swapped images to the user
-        await update.message.reply_photo(buffer_1.tobytes())
-        await update.message.reply_photo(buffer_2.tobytes())
-
+                # If the processing is complete, download the enhanced image
+                if response_json.get('status') == 'complete':
+                    result_url = response_json['result_url']
+                    output_path = Path(result_url).name
+                    urlretrieve(result_url, output_path)
+                    return output_path
+                else:
+                    print(f"Error: {response_json}")
+            else:
+                print(f"API Request Failed: {response.status_code}, {response.text}")
     except Exception as e:
-        await update.message.reply_text(f"Error: {str(e)}")
+        print(f"Error enhancing image: {e}")
+    return None
+
+# Function to handle received photos
+def handle_photo(update: Update, context):
+    # Get the photo file from the user
+    photo_file = update.message.photo[-1].get_file()
+    photo_path = "user_image.jpg"
+    photo_file.download(photo_path)
+
+    # Enhance the photo
+    enhanced_photo_path = enhance_image(photo_path)
+
+    if enhanced_photo_path:
+        # Send the enhanced photo back to the user
+        context.bot.send_photo(chat_id=update.message.chat_id, photo=open(enhanced_photo_path, 'rb'))
+    else:
+        update.message.reply_text("Sorry, I couldn't enhance your photo. Please try again later.")
+
+# Function to handle the /start command
+def start(update: Update, context):
+    update.message.reply_text("Welcome! Send me a photo, and I'll enhance it for you!")
 
 # Main function to run the bot
-async def main():
-    TELEGRAM_TOKEN = '8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ'
+def main():
+    # Replace with your Telegram bot token
+    TELEGRAM_BOT_TOKEN = "8179647576:AAFQ1xNRSVTlA_fzfJ2m8Hz6g-d5a8TVnUQ"
 
-    # Create the Application
-    application = Application.builder().token(TELEGRAM_TOKEN).build()
+    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    # Command handler for /start
-    application.add_handler(CommandHandler("start", start))
+    # Add handlers
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(MessageHandler(Filters.photo, handle_photo))
 
-    # Message handler for photos
-    application.add_handler(MessageHandler(filters.PHOTO, handle_images))
+    # Start the bot
+    updater.start_polling()
+    updater.idle()
 
-    # Start polling for updates
-    await application.run_polling()
-
-if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+if __name__ == "__main__":
+    main()
