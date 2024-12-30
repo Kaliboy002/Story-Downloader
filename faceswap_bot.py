@@ -4,6 +4,7 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 from telegram.ext import CallbackContext
 from io import BytesIO
+import asyncio
 
 # Set up logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -71,5 +72,10 @@ async def main():
     await application.run_polling()
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    try:
+        loop = asyncio.get_event_loop()
+        loop.create_task(main())  # Create the main task
+        loop.run_forever()  # Run the event loop forever
+    except RuntimeError as e:
+        if "This event loop is already running" in str(e):
+            asyncio.get_event_loop().create_task(main())
