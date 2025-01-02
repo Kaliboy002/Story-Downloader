@@ -1,113 +1,126 @@
-import asyncio
+import telebot
 import requests
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (
-    ApplicationBuilder, 
-    CommandHandler, 
-    ContextTypes, 
-    CallbackQueryHandler
-)
+from bs4 import BeautifulSoup
+import re
 
-# Replace these with your tokens
-TELEGRAM_BOT_TOKEN = "8179647576:AAGPGp13Pp-qF32KqDivMTEn-4LHOLcpRpI"
-APYHUB_TOKEN = "APY0QoajCYZOytNXkLncO1v5XIBoSDYqyLWkhwtZZJF58Tyd42nf8p5KmwL30pMAbHs"
+bot = telebot.TeleBot("8179647576:AAGPGp13Pp-qF32KqDivMTEn-4LHOLcpRpI")
 
-# Fetch app reviews from ApyHub API
-def fetch_app_reviews(platform, app_id, country=None, language=None, sort_by="mostrecent"):
-    url = "https://api.apyhub.com/recensia/analyse_reviews"
-    headers = {
-        "Content-Type": "application/json",
-        "apy-token": APYHUB_TOKEN
-    }
-    data = {
-        "platform": platform,
-        "app_id": app_id,
-        "sort_by": sort_by,
-    }
-    if country:
-        data["country"] = country
-    if language:
-        data["language"] = language
+user_search_data = {}
 
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        return {"error": response.json()}
+class SearchData:
+    def __init__(self):
+        self.text = ''
+        self.page = 0
+        self.total_videos = 0
+        self.videos = []
 
-# Command to fetch reviews
-async def get_reviews(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    args = context.args
-    if len(args) < 2:
-        await update.message.reply_text(
-            "Usage: /reviews <platform> <app_id> [country/language] [sort_by]\n"
-            "Example: /reviews app_store 368677368 us mostrecent\n\n"
-            "Supported platforms: app_store, google_play"
-        )
-        return
+def extract_and_return_url(anchor):
+    clip_id = re.search(r'/yarn-clip/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})', anchor['href']).group(1)
+    forward_url = f"https://y.yarn.co/{clip_id}_thumb.mp4"
+    return forward_url
 
-    platform = args[0].lower()
-    app_id = args[1]
-    country_or_language = args[2] if len(args) > 2 else None
-    sort_by = args[3] if len(args) > 3 else "mostrecent"
+def extract_title_and_transcript(element):
+    title = element.find('div', class_='title ab fw5 p025 px05 tal').text.strip()
+    transcript = element.find('div', class_='transcript db bg-w fwb p05 tal').text.strip()
+    return title, transcript
 
-    if platform not in ["app_store", "google_play"]:
-        await update.message.reply_text("Invalid platform. Use 'app_store' or 'google_play'.")
-        return
+def parse_page(text, page):
+    base_url = "https://yarn.co/yarn-find"
+    url = f"{base_url}?text={text}&p={page}"
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    elements = soup.find_all(class_="clip bg-t rel nomob")
+    videos = []
+    for element in elements:
+        anchor = element.find('a', href=re.compile(r'/yarn-clip/(\w{8}-\w{4}-\w{4}-\w{4}-\w{12})'))
+        if anchor:
+            title, transcript = extract_title_and_transcript(element)
+            video_url = extract_and_return_url(anchor)
+            videos.append((video_url, title, transcript))
+    return videos
 
-    reviews = fetch_app_reviews(platform, app_id, country=country_or_language, sort_by=sort_by)
-
-    if "error" in reviews:
-        await update.message.reply_text(f"Error fetching reviews: {reviews['error']}")
-    else:
-        message = reviews["message"]
-        summary = (
-            f"**App Reviews Summary**\n"
-            f"Reviews Analyzed: {message['review_count']}\n"
-            f"Rating: {message['rating']}/5\n\n"
-            f"**Summary**:\n{message['content'][:4000]}..."
-        )
-        keyboard = [
-            [
-                InlineKeyboardButton("More Details", callback_data="details"),
-                InlineKeyboardButton("Set Filters", callback_data="filters"),
-            ]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-        await update.message.reply_text(summary, reply_markup=reply_markup, parse_mode="Markdown")
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-
-    if query.data == "details":
-        await query.edit_message_text("Detailed information coming soon!")
-    elif query.data == "filters":
-        await query.edit_message_text("Filter setting feature will be added soon.")
-
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    help_text = (
-        "🤖 **App Review Bot Help**\n\n"
-        "This bot allows you to fetch app reviews from the Apple App Store or Google Play Store.\n\n"
-        "**Commands:**\n"
-        "/reviews - Fetch app reviews\n"
-        "Usage: /reviews <platform> <app_id> [country/language] [sort_by]\n\n"
-        "**Examples:**\n"
-        "/reviews app_store 368677368 us mostrecent\n"
-        "/reviews google_play com.example.app en newest\n\n"
-        "Supported platforms: app_store, google_play"
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    welcome_text = (
+        "Welcome! I'm the Memes and Clips Bot 😎\n\n"
+        "I can help you find clips from movies, films, and cartoons based on the text you send. "
+        "Just enter the text and I'll search for matching clips for you!\n\n"
+        "Use the /help command to see more information and how to use me."
     )
-    await update.message.reply_text(help_text, parse_mode="Markdown")
+    bot.reply_to(message, welcome_text)
 
-def main():
-    app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
+@bot.message_handler(commands=['help'])
+def send_help(message):
+    help_text = (
+        "Here's how you can use me:\n\n"
+        "1. Send /clip followed by the text you want to find clips for.\n"
+        "2. I'll search for clips based on the text and send them to you.\n"
+        "3. If you want to load more clips, just click on 'Yes' when prompted.\n\n"
+        "Have fun searching for memes and clips! 😊🎬🔍"
+    )
+    bot.reply_to(message, help_text)
 
-    app.add_handler(CommandHandler("reviews", get_reviews))
-    app.add_handler(CommandHandler("help", help_command))
-    app.add_handler(CallbackQueryHandler(button_handler))
+@bot.message_handler(commands=['clip'])
+def handle_clip_command(message):
+    global user_search_data
+    user_id = message.chat.id
+    clip_command_parts = message.text.split("/clip ", 1)
+    if len(clip_command_parts) > 1:
+        text = clip_command_parts[1]
+        search_data = SearchData()
+        search_data.text = text
+        user_search_data[user_id] = search_data
+        search_videos(message.chat.id)
+    else:
+        bot.reply_to(message, "Please provide the text to search for clips.")
 
-    print("Bot is running...")
-    asyncio.get_event_loop().run_until_complete(app.run_polling())
+def search_videos(chat_id):
+    global user_search_data
+    user_id = chat_id
+    search_data = user_search_data.get(user_id)
+    if search_data:
+        search_data.videos = parse_page(search_data.text, search_data.page)
+        if search_data.videos:
+            for video_data in search_data.videos:
+                video_url, title, transcript = video_data
+                caption = f"From: {title} 🎦\nClip: {transcript} 📋"
+                bot.send_video(chat_id, video_url, caption=caption)
+                search_data.total_videos += 1
+            bot.send_message(chat_id, f"Found {len(search_data.videos)} videos. Do you want to load more videos?",reply_markup=create_inline_keyboard_markup())
+        else:
+            bot.send_message(chat_id, "No videos found.")
+    else:
+        bot.send_message(chat_id, "No search data found.")
 
-if __name__ == "__main__":
-    main()
+@bot.callback_query_handler(func=lambda call: call.data == 'load_more')
+def load_more_videos(call):
+    global user_search_data
+    user_id = call.message.chat.id
+    search_data = user_search_data.get(user_id)
+    if search_data:
+        search_data.page += 1
+        bot.delete_message(call.message.chat.id, call.message.message_id)
+        search_videos(call.message.chat.id)
+    else:
+        bot.send_message(call.message.chat.id, "No search data found.")
+
+@bot.callback_query_handler(func=lambda call: call.data == 'no_more')
+def no_more_videos(call):
+    global user_search_data
+    user_id = call.message.chat.id
+    search_data = user_search_data.get(user_id)
+    bot.delete_message(call.message.chat.id, call.message.message_id)
+    if search_data and search_data.total_videos > 0:
+        bot.send_message(call.message.chat.id, f"Total {search_data.total_videos} videos found.\nSend /start",parse_mode='Markdown')
+    else:
+        bot.send_message(call.message.chat.id, "No videos found.")
+
+def create_inline_keyboard_markup():
+    markup = telebot.types.InlineKeyboardMarkup()
+    markup.row(
+        telebot.types.InlineKeyboardButton(text='Yes', callback_data='load_more'),
+        telebot.types.InlineKeyboardButton(text='No', callback_data='no_more')
+    )
+    return markup
+
+bot.polling()
