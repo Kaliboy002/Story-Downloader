@@ -1,3 +1,4 @@
+import asyncio
 import requests
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import (
@@ -36,7 +37,7 @@ def fetch_app_reviews(platform, app_id, country=None, language=None, sort_by="mo
 
 # Command to fetch reviews
 async def get_reviews(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    args = context.args  # Get arguments from the command
+    args = context.args
     if len(args) < 2:
         await update.message.reply_text(
             "Usage: /reviews <platform> <app_id> [country/language] [sort_by]\n"
@@ -50,12 +51,10 @@ async def get_reviews(update: Update, context: ContextTypes.DEFAULT_TYPE):
     country_or_language = args[2] if len(args) > 2 else None
     sort_by = args[3] if len(args) > 3 else "mostrecent"
 
-    # Validate platform input
     if platform not in ["app_store", "google_play"]:
         await update.message.reply_text("Invalid platform. Use 'app_store' or 'google_play'.")
         return
 
-    # Fetch reviews
     reviews = fetch_app_reviews(platform, app_id, country=country_or_language, sort_by=sort_by)
 
     if "error" in reviews:
@@ -66,7 +65,7 @@ async def get_reviews(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"**App Reviews Summary**\n"
             f"Reviews Analyzed: {message['review_count']}\n"
             f"Rating: {message['rating']}/5\n\n"
-            f"**Summary**:\n{message['content'][:4000]}..."  # Telegram messages have a 4096-character limit
+            f"**Summary**:\n{message['content'][:4000]}..."
         )
         keyboard = [
             [
@@ -75,10 +74,8 @@ async def get_reviews(update: Update, context: ContextTypes.DEFAULT_TYPE):
             ]
         ]
         reply_markup = InlineKeyboardMarkup(keyboard)
-
         await update.message.reply_text(summary, reply_markup=reply_markup, parse_mode="Markdown")
 
-# Callback handler for inline buttons
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -88,7 +85,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif query.data == "filters":
         await query.edit_message_text("Filter setting feature will be added soon.")
 
-# Help command
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     help_text = (
         "🤖 **App Review Bot Help**\n\n"
@@ -103,21 +99,15 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
     await update.message.reply_text(help_text, parse_mode="Markdown")
 
-# Main function to run the bot
-async def main():
+def main():
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Command handlers
     app.add_handler(CommandHandler("reviews", get_reviews))
     app.add_handler(CommandHandler("help", help_command))
-
-    # Callback query handler for inline buttons
     app.add_handler(CallbackQueryHandler(button_handler))
 
     print("Bot is running...")
-    await app.run_polling()
+    asyncio.get_event_loop().run_until_complete(app.run_polling())
 
-# Run the bot
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
+    main()
